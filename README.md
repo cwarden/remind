@@ -1,6 +1,6 @@
 # remind
 
-Package `github.com/cwarden/remind` is a ccgo/v4 (modernc.org/ccgo) version
+Package `github.com/cwarden/remind/v6` is a ccgo/v4 (modernc.org/ccgo) version
 of [Remind](https://dianne.skoll.ca/projects/remind/), the calendar and alarm
 program by Dianne Skoll. The C sources of Remind 06.03.02 are transpiled to
 Go and linked against modernc.org/libc, so the result builds with the Go
@@ -12,7 +12,7 @@ same terms as Remind. See LICENSE and LICENSE-REMIND.
 ## Installing
 
 ```
-go install github.com/cwarden/remind/cmd/remind@latest
+go install github.com/cwarden/remind/v6/cmd/remind@latest
 ```
 
 The binary accepts the same options as the C `remind` and produces the same
@@ -69,7 +69,7 @@ The system include directory (`$SysInclude`, used by `INCLUDE [...]`) is
 variable, or at build time with
 
 ```
-go build -ldflags "-X github.com/cwarden/remind.DefaultSysDir=/usr/share/remind" ./cmd/remind
+go build -ldflags "-X github.com/cwarden/remind/v6.DefaultSysDir=/usr/share/remind" ./cmd/remind
 ```
 
 ## Regenerating

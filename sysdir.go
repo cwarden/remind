@@ -4,7 +4,7 @@
 
 //go:build linux
 
-package remind // import "github.com/cwarden/remind"
+package remind // import "github.com/cwarden/remind/v6"
 
 import (
 	"os"
@@ -15,7 +15,7 @@ import (
 // DefaultSysDir overrides the compiled-in system include directory
 // ($SysInclude, /usr/local/share/remind) when set at link time:
 //
-//	go build -ldflags "-X github.com/cwarden/remind.DefaultSysDir=/usr/share/remind"
+//	go build -ldflags "-X github.com/cwarden/remind/v6.DefaultSysDir=/usr/share/remind"
 //
 // The REMIND_SYSDIR environment variable takes precedence over it.
 var DefaultSysDir string

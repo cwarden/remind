@@ -4,7 +4,7 @@
 
 //go:build linux
 
-package remind // import "github.com/cwarden/remind"
+package remind // import "github.com/cwarden/remind/v6"
 
 import (
 	"testing"

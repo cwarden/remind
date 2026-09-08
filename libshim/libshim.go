@@ -10,7 +10,7 @@
 // ccgo links this package as -lshim: every exported function whose first
 // parameter is *libc.TLS is visible to the generated code as the C function
 // of the same name without the X prefix.
-package libshim // import "github.com/cwarden/remind/libshim"
+package libshim // import "github.com/cwarden/remind/v6/libshim"
 
 import (
 	"errors"

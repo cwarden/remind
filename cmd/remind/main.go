@@ -6,7 +6,7 @@
 package main
 
 import (
-	"github.com/cwarden/remind"
+	"github.com/cwarden/remind/v6"
 	"modernc.org/libc"
 )
 

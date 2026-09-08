@@ -1,4 +1,4 @@
-module github.com/cwarden/remind
+module github.com/cwarden/remind/v6
 
 go 1.26.2
 

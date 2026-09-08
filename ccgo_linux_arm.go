@@ -1,4 +1,4 @@
-// Code generated for linux/arm by 'generator --prefix-enumerator=_ --prefix-external=x_ --prefix-field=F --prefix-macro=m_ --prefix-static-internal=_ --prefix-static-none=_ --prefix-tagged-enum=_ --prefix-tagged-struct=T --prefix-tagged-union=T --prefix-typename=T --prefix-undefined=_ -extended-errors -ignore-unsupported-alignment -DSYSDIR=/usr/local/share/remind -Isrc -Lgithub.com/cwarden/remind -lshim -o remind.go --package-name remind src/calendar.c src/dedupe.c src/dynbuf.c src/dorem.c src/dosubst.c src/expr.c src/files.c src/funcs.c src/globals.c src/hashtab.c src/hashtab_stats.c src/hbcal.c src/ifelse.c src/init.c src/main.c src/markup.c src/md5.c src/moon.c src/omit.c src/queue.c src/sort.c src/token.c src/trans.c src/trigger.c src/userfns.c src/utils.c src/var.c src/xlat.c', DO NOT EDIT.
+// Code generated for linux/arm by 'generator --prefix-enumerator=_ --prefix-external=x_ --prefix-field=F --prefix-macro=m_ --prefix-static-internal=_ --prefix-static-none=_ --prefix-tagged-enum=_ --prefix-tagged-struct=T --prefix-tagged-union=T --prefix-typename=T --prefix-undefined=_ -extended-errors -ignore-unsupported-alignment -DSYSDIR=/usr/local/share/remind -Isrc -Lgithub.com/cwarden/remind/v6 -lshim -o remind.go --package-name remind src/calendar.c src/dedupe.c src/dynbuf.c src/dorem.c src/dosubst.c src/expr.c src/files.c src/funcs.c src/globals.c src/hashtab.c src/hashtab_stats.c src/hbcal.c src/ifelse.c src/init.c src/main.c src/markup.c src/md5.c src/moon.c src/omit.c src/queue.c src/sort.c src/token.c src/trans.c src/trigger.c src/userfns.c src/utils.c src/var.c src/xlat.c', DO NOT EDIT.
 
 //go:build linux && arm
 
@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/cwarden/remind/libshim"
+	"github.com/cwarden/remind/v6/libshim"
 	"modernc.org/libc"
 )
 

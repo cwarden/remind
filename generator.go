@@ -43,7 +43,7 @@ const (
 	version     = "06.03.02"
 	archivePath = "remind-" + version + ".tar.gz"
 	patchPath   = "internal/patches/ccgo-hooks.patch"
-	modulePath  = "github.com/cwarden/remind"
+	modulePath  = "github.com/cwarden/remind/v6"
 	// sysDir is the compiled-in $SysInclude directory, the same value
 	// ./configure --prefix=/usr/local gives the C build.
 	sysDir = "/usr/local/share/remind"

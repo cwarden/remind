@@ -9,4 +9,4 @@
 //
 // The generated code exports the C program's entry point as Xmain; the
 // cmd/remind program wraps it with libc.Start.
-package remind // import "github.com/cwarden/remind"
+package remind // import "github.com/cwarden/remind/v6"

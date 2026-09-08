@@ -4,7 +4,7 @@
 
 //go:build unix
 
-package libshim // import "github.com/cwarden/remind/libshim"
+package libshim // import "github.com/cwarden/remind/v6/libshim"
 
 import (
 	"bytes"

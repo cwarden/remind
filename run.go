@@ -4,7 +4,7 @@
 
 //go:build linux
 
-package remind // import "github.com/cwarden/remind"
+package remind // import "github.com/cwarden/remind/v6"
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/cwarden/remind/libshim"
+	"github.com/cwarden/remind/v6/libshim"
 	"modernc.org/libc"
 )
 
