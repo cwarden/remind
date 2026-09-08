@@ -47,12 +47,10 @@ is available on the current platform.
 
 ## Using it from urd
 
-[urd](https://github.com/cwarden/urd) runs `remind` as a subprocess. Point it
-at the Go binary in `~/.urdrc`:
-
-```
-set remind_command="/home/you/go/bin/remind"
-```
+[urd](https://github.com/cwarden/urd) imports this module and runs remind
+in its own process through `Run` (see below), so no `remind` binary is
+needed where the generated code is available. On other platforms urd runs
+the external program named by `remind_command` in `~/.urdrc`.
 
 ## Differences from the C build
 
