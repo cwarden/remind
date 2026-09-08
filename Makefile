@@ -2,7 +2,7 @@
 # Use of this source code is governed by the GNU General Public License,
 # Version 2, which can be found in the LICENSE file.
 
-.PHONY:	all build clean dev download editor generate lint patch test work
+.PHONY:	all build clean dev download editor generate generate-all lint patch test work
 
 # Keep the exit status of pipelines such as `go run generator.go | tee`.
 SHELL = /bin/bash
@@ -56,6 +56,16 @@ generate: download
 	git status
 	grep 'TRC\|TODO\|ERRORF\|FAIL' log-generate || true
 	grep 'TRC\|TODO\|ERRORF\|FAIL' log-generate-errors || true
+
+# Every Linux architecture modernc.org/libc ships headers for.
+ARCHES = 386 amd64 arm arm64 loong64 ppc64le riscv64 s390x
+
+generate-all: download
+	for a in $(ARCHES); do \
+		GO_GENERATE_GOARCH=$$a GO_GENERATE_DIR=$(DIR)-$$a go run generator.go || exit 1; \
+		rm -rf $(DIR)-$$a; \
+	done
+	git status
 
 dev: download
 	mkdir -p $(DIR) || true

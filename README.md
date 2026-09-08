@@ -16,9 +16,34 @@ go install github.com/cwarden/remind/cmd/remind@latest
 ```
 
 The binary accepts the same options as the C `remind` and produces the same
-output. Only linux/amd64 is generated at the moment.
+output. Generated code is included for Linux on 386, amd64, arm, arm64,
+loong64, ppc64le, riscv64 and s390x. Other operating systems need the
+generator run natively there (see Regenerating); the package still compiles
+on them, with `Builtin` false and `Run` returning `ErrUnsupported`.
 
 `rem2ps`, `rem2html`, `rem2pdf` and `tkremind` are not included.
+
+## Using remind as a library
+
+`Run` executes the remind program inside the calling process:
+
+```go
+res, err := remind.Run([]string{"-pppq", "-l", "-g", "-b2", file, "Mar", "1", "2024"}, nil)
+// res.Stdout, res.Stderr, res.ExitCode
+```
+
+The second argument is the program's standard input. Runs are serialized,
+because remind is not reentrant, and each run starts from the state of a
+fresh process: every global of the generated code is reset, files cached by
+the previous run are read again, and `exit()` and `atexit` handlers work as
+they would in a separate process. Output is captured inside the C library,
+so the calling program's own standard streams are unaffected.
+
+Limits: a run that queues timed reminders (no `-q`) waits for them in the
+calling process; `--max-execution-time` ends the whole process when it
+expires; `abort()` is fatal, as in C; and the C environment is a copy of
+the process environment taken at startup. `Builtin` reports whether `Run`
+is available on the current platform.
 
 ## Using it from urd
 
@@ -51,14 +76,21 @@ go build -ldflags "-X github.com/cwarden/remind.DefaultSysDir=/usr/share/remind"
 
 ## Regenerating
 
-The generated file `ccgo_linux_amd64.go` is produced from the release tarball
-by `generator.go`. Regenerating needs a C compiler (for `./configure`),
+The generated files `ccgo_<goos>_<goarch>.go` and, derived from each,
+`reset_<goos>_<goarch>.go` (the function that gives every global its
+initial value before a run) are produced from the release tarball by
+`generator.go`. Regenerating needs a C compiler (for `./configure`),
 `make`, `sh`, `patch`, `tar`, `wget` and `gofmt`:
 
 ```
-make download    # fetch remind-06.03.02.tar.gz
-make generate    # transpile into ccgo_linux_amd64.go
+make download        # fetch remind-06.03.02.tar.gz
+make generate        # transpile for the host GOOS/GOARCH
+make generate-all    # transpile for every supported Linux architecture
 ```
+
+Linux targets can be generated on any Linux host because modernc.org/libc
+ships their C headers. Other operating systems must run `make generate`
+natively; the generator turns off inotify for them.
 
 Environment variables honoured by the generator:
 
@@ -67,6 +99,7 @@ Environment variables honoured by the generator:
 | `GO_GENERATE_DIR` | work directory (the Makefile uses /tmp/remindgo) |
 | `GO_GENERATE_KEEP` | keep the work directory |
 | `GO_GENERATE_DEV` | emit ccgo debugging aids and use `../libc` and `../ccgo/v4` checkouts |
+| `GO_GENERATE_GOOS`, `GO_GENERATE_GOARCH` | target platform (default: the host's) |
 
 Two runs of the generator on the same inputs produce files that differ only
 in the order of the string literal table (and therefore in the offsets that
@@ -74,11 +107,12 @@ refer to it); ccgo assigns those offsets in map iteration order. Regenerate
 and commit only when the sources, the patch, the ccgo flags, or the pinned
 ccgo and libc versions change.
 
-The C sources get five small changes under `#ifdef __CCGO__`, kept in
-`internal/patches/ccgo-hooks.patch`: `popen` and `pclose` are routed to Go
-implementations, `sigaction` is replaced by `signal`, and the three `fork`
-sites (background reminders, server-mode RUN commands, and the
-`--max-execution-time` watchdog) call Go hooks. The hooks are implemented in
+The C sources get small changes under `#ifdef __CCGO__`, kept in
+`internal/patches/ccgo-hooks.patch`: `popen`, `pclose`, `exit` and `atexit`
+are routed to Go implementations, `sigaction` is replaced by `signal`, the
+three `fork` sites (background reminders, server-mode RUN commands, and the
+`--max-execution-time` watchdog) call Go hooks, and `files.c` gains a
+function that discards the parsed-file cache. The hooks are implemented in
 the `libshim` package, which ccgo links with `-lshim`. The patch is authored
 on the `go-port` branch of a Remind checkout next to this repository and
 exported with `make patch`.
@@ -93,6 +127,8 @@ go test ./...
 The tests in the root package extract the tarball, build the C `remind` and
 `rem2ps` from it for reference, build the Go `remind`, and then run the
 upstream acceptance suite (`tests/test-rem`), the timezone suite
-(`tests/test-timezone-support`), and a comparison of the C and Go binaries
-on the command lines urd uses. They need a C compiler, `make`, a non-root
+(`tests/test-timezone-support`), a comparison of the C and Go binaries on
+the command lines urd uses, and a comparison of repeated in-process `Run`
+calls with fresh C processes. They need a C compiler, `make`, a non-root
 user, and the system zoneinfo database, and skip when the tarball is absent.
+The `Run` tests that need no reference binary always run.
