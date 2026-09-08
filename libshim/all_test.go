@@ -8,6 +8,7 @@ package libshim // import "github.com/cwarden/remind/libshim"
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -197,4 +198,55 @@ func TestUnlimitCancelsLimit(t *testing.T) {
 	Xrem_unlimit_execution_time(tls)
 	Xrem_unlimit_execution_time(tls)
 	time.Sleep(1500 * time.Millisecond)
+}
+
+func TestExitHookReceivesStatus(t *testing.T) {
+	tls := newTLS(t)
+	var got int32 = -1
+	SetExitHook(func(status int32) {
+		got = status
+		panic("exit")
+	})
+	defer SetExitHook(nil)
+	func() {
+		defer func() {
+			if r := recover(); r != "exit" {
+				t.Errorf("recovered %v, want the hook's panic", r)
+			}
+		}()
+		Xrem_exit(tls, 7)
+		t.Error("Xrem_exit returned")
+	}()
+	if got != 7 {
+		t.Errorf("hook received %d, want 7", got)
+	}
+}
+
+// exitHandlerCalls counts calls to the C-callable test handler.
+var exitHandlerCalls []int
+
+func exitHandlerA(tls *libc.TLS) { exitHandlerCalls = append(exitHandlerCalls, 1) }
+func exitHandlerB(tls *libc.TLS) { exitHandlerCalls = append(exitHandlerCalls, 2) }
+
+func TestAtexitHandlersRunInReverseOrderDuringInProcessRun(t *testing.T) {
+	tls := newTLS(t)
+	SetExitHook(func(int32) { panic("exit") })
+	defer SetExitHook(nil)
+	exitHandlerCalls = nil
+	fa := *(*uintptr)(unsafe.Pointer(&struct{ f func(*libc.TLS) }{exitHandlerA}))
+	fb := *(*uintptr)(unsafe.Pointer(&struct{ f func(*libc.TLS) }{exitHandlerB}))
+	if rc := Xrem_atexit(tls, fa); rc != 0 {
+		t.Fatalf("atexit returned %d", rc)
+	}
+	if rc := Xrem_atexit(tls, fb); rc != 0 {
+		t.Fatalf("atexit returned %d", rc)
+	}
+	RunExitHandlers(tls)
+	if got := fmt.Sprint(exitHandlerCalls); got != "[2 1]" {
+		t.Errorf("handlers ran as %s, want [2 1]", got)
+	}
+	RunExitHandlers(tls)
+	if len(exitHandlerCalls) != 2 {
+		t.Errorf("handlers ran again: %v", exitHandlerCalls)
+	}
 }

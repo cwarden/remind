@@ -181,6 +181,50 @@ func TestUrdInvocations(t *testing.T) {
 	compareRuns(t, tr, []string{"-n"}, "REM MSG test\n")
 }
 
+// TestRunMatchesSubprocess runs a sequence of differing invocations through
+// Run in this process and requires each to match the C binary run afresh,
+// which checks that state does not leak from one in-process run into the
+// next.
+func TestRunMatchesSubprocess(t *testing.T) {
+	tr := requireTree(t)
+	for _, v := range []string{"TZ=UTC", "LANG=C.UTF-8", "LC_ALL=C.UTF-8"} {
+		kv := strings.SplitN(v, "=", 2)
+		t.Setenv(kv[0], kv[1])
+		cSetenv(t, kv[0], kv[1])
+	}
+	abs := func(file string) string { return filepath.Join(tr.root, file) }
+	cases := [][]string{
+		{"-pppq", "-l", "-g", "-b2", abs("tests/test.rem"), "Jan", "1", "2024", "12:00"},
+		{"-n", "-b1", abs("tests/todos.rem"), "Feb", "1", "2024", "12:00"},
+		{"-s", abs("tests/tstlang.rem"), "Aug", "1", "2025", "12:00"},
+		{"-c", abs("tests/yearfold.rem"), "Feb", "1", "2026", "12:00"},
+		{"-q", abs("tests/test.rem"), "16", "feb", "1991", "12:13"},
+		{"-pppq", "-l", "-g", "-b2", abs("tests/todos.rem"), "Aug", "1", "2025", "12:00"},
+		{"-n", "-b1", abs("tests/test.rem"), "Jan", "1", "2024", "12:00"},
+		{"-q", abs("tests/nosuchfile.rem"), "1", "Jan", "2024"},
+		{"-pppq", "-l", "-g", "-b2", abs("tests/test.rem"), "Feb", "1", "2024", "12:00"},
+	}
+	for i := 0; i < 2; i++ {
+		for _, args := range cases {
+			name := strings.Join(args, " ")
+			cOut, cErr, cRC := runRemind(t, tr, tr.cRemind, args, "")
+			res, err := Run(args, nil)
+			if err != nil {
+				t.Fatalf("%s: %v", name, err)
+			}
+			if res.ExitCode != cRC {
+				t.Errorf("%s: exit status C=%d Run=%d", name, cRC, res.ExitCode)
+			}
+			if !bytes.Equal(cOut, res.Stdout) {
+				t.Errorf("%s: stdout differs\n%s", name, unifiedDiff(t, cOut, res.Stdout))
+			}
+			if !bytes.Equal(cErr, res.Stderr) {
+				t.Errorf("%s: stderr differs\n%s", name, unifiedDiff(t, cErr, res.Stderr))
+			}
+		}
+	}
+}
+
 func compareRuns(t *testing.T, tr *testTree, args []string, stdin string) {
 	t.Helper()
 	name := strings.Join(args, " ")

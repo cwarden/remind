@@ -20,6 +20,10 @@ import (
 // The REMIND_SYSDIR environment variable takes precedence over it.
 var DefaultSysDir string
 
+// sysDir is the override installed by SetSysDir, or 0 for the compiled-in
+// directory.
+var sysDir uintptr
+
 // SetSysDir replaces the system include directory used for INCLUDE [...]
 // and reported by $SysInclude. It must be called before Xmain runs.
 func SetSysDir(dir string) error {
@@ -27,8 +31,16 @@ func SetSysDir(dir string) error {
 	if err != nil {
 		return err
 	}
-	XSysDir = p
+	sysDir = p
+	applySysDir()
 	return nil
+}
+
+// applySysDir installs the override, if any, into the C global.
+func applySysDir() {
+	if sysDir != 0 {
+		XSysDir = sysDir
+	}
 }
 
 func init() {

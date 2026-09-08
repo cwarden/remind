@@ -1,3 +1,25 @@
+diff --git a/src/files.c b/src/files.c
+index 7434e801..9e8dc13d 100644
+--- a/src/files.c
++++ b/src/files.c
+@@ -1332,6 +1332,17 @@ static void DestroyCache(CachedFile *cf)
+     free(cf);
+ }
+ 
++#ifdef __CCGO__
++/* Discard every cached file.  The Go build calls this between in-process
++   runs so that files edited since the previous run are read again. */
++void rem_flush_file_cache(void)
++{
++    while (CachedFiles) {
++        DestroyCache(CachedFiles);
++    }
++}
++#endif
++
+ /***************************************************************/
+ /*                                                             */
+ /*  TopLevel                                                   */
 diff --git a/src/init.c b/src/init.c
 index 9e0c0a25..1feee59d 100644
 --- a/src/init.c
@@ -96,10 +118,10 @@ index 2fd82591..607743ce 100644
          /* Server mode... redirect stdin and stdout to /dev/null */
          kid = fork();
 diff --git a/src/protos.h b/src/protos.h
-index 2288ee6d..78a05e3a 100644
+index 2288ee6d..b06fe19a 100644
 --- a/src/protos.h
 +++ b/src/protos.h
-@@ -42,6 +42,18 @@
+@@ -42,6 +42,26 @@
  #include "dynbuf.h"
  #include <ctype.h>
  
@@ -111,8 +133,16 @@ index 2288ee6d..78a05e3a 100644
 +void rem_system_devnull(char const *cmd, int stdout_to_stderr);
 +void rem_limit_execution_time(int seconds);
 +void rem_unlimit_execution_time(void);
++void rem_exit(int status);
++int rem_atexit(void (*func)(void));
++void rem_flush_file_cache(void);
 +#define popen(cmd, mode) rem_popen((cmd), (mode))
 +#define pclose(fp) rem_pclose(fp)
++/* When remind runs inside another Go program, exit() must unwind to the
++   caller instead of ending the process, and the caller runs the handlers
++   registered with atexit(). */
++#define exit(status) rem_exit(status)
++#define atexit(func) rem_atexit(func)
 +#endif
 +
  int CallUserFunc (char const *name, int nargs, ParsePtr p);

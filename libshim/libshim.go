@@ -163,6 +163,66 @@ func Xrem_limit_execution_time(tls *libc.TLS, seconds int32) {
 	})
 }
 
+// ExitHook receives the status of an exit() call made while remind runs
+// inside another Go program. It must not return; the in-process runner
+// panics with the status and recovers it.
+type ExitHook func(status int32)
+
+var exitHook ExitHook
+
+// SetExitHook installs the function Xrem_exit calls instead of ending the
+// process. A nil hook restores the normal exit behaviour.
+func SetExitHook(h ExitHook) {
+	mu.Lock()
+	defer mu.Unlock()
+	exitHook = h
+}
+
+// exitHandlers holds the functions registered with atexit() during an
+// in-process run, in registration order.
+var exitHandlers []uintptr
+
+// Xrem_atexit implements atexit() for the __CCGO__ build. During an
+// in-process run (an exit hook is set) it records the handler for
+// RunExitHandlers; otherwise it registers the handler with libc.
+func Xrem_atexit(tls *libc.TLS, fn uintptr) int32 {
+	mu.Lock()
+	inProcess := exitHook != nil
+	if inProcess {
+		exitHandlers = append(exitHandlers, fn)
+	}
+	mu.Unlock()
+	if inProcess {
+		return 0
+	}
+	return libc.Xatexit(tls, fn)
+}
+
+// RunExitHandlers runs the handlers recorded by Xrem_atexit during the
+// current in-process run, last registered first, as exit() would, and
+// forgets them.
+func RunExitHandlers(tls *libc.TLS) {
+	mu.Lock()
+	handlers := exitHandlers
+	exitHandlers = nil
+	mu.Unlock()
+	for i := len(handlers) - 1; i >= 0; i-- {
+		(*(*func(*libc.TLS))(unsafe.Pointer(&struct{ uintptr }{handlers[i]})))(tls)
+	}
+}
+
+// Xrem_exit implements exit() for the __CCGO__ build. Without an exit hook
+// it ends the process through libc, running atexit handlers as exit does.
+func Xrem_exit(tls *libc.TLS, status int32) {
+	mu.Lock()
+	h := exitHook
+	mu.Unlock()
+	if h != nil {
+		h(status)
+	}
+	libc.Xexit(tls, status)
+}
+
 // Xrem_unlimit_execution_time cancels a pending execution time limit. It is
 // safe to call when no limit is set; Remind calls it from its exit handler.
 func Xrem_unlimit_execution_time(tls *libc.TLS) {
