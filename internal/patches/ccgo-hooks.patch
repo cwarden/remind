@@ -1,0 +1,146 @@
+diff --git a/src/init.c b/src/init.c
+index 9e0c0a25..1feee59d 100644
+--- a/src/init.c
++++ b/src/init.c
+@@ -1159,6 +1159,18 @@ AddTrustedUser(char const *username)
+     NumTrustedUsers++;
+ }
+ 
++#ifdef __CCGO__
++/* The Go build cannot fork a watchdog process; a Go timer does the job. */
++void unlimit_execution_time(void)
++{
++    rem_unlimit_execution_time();
++}
++
++static void limit_execution_time(int t)
++{
++    rem_limit_execution_time(t);
++}
++#else
+ static pid_t LimiterPid = (pid_t) -1;
+ 
+ void unlimit_execution_time(void)
+@@ -1199,6 +1211,7 @@ static void limit_execution_time(int t)
+         }
+     }
+ }
++#endif
+ 
+ static void
+ ProcessLongOption(char const *arg)
+diff --git a/src/main.c b/src/main.c
+index 2fd82591..607743ce 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -144,6 +144,13 @@ int main(int argc, char *argv[])
+ 
+     InitRemind(argc, (char const **) argv);
+ 
++#ifdef __CCGO__
++    /* modernc.org/libc delivers signals cooperatively through signal();
++       its sigaction() installs an unusable kernel handler. */
++    (void) act;
++    signal(SIGALRM, sigalrm);
++    signal(SIGXCPU, sigxcpu);
++#else
+     act.sa_handler = sigalrm;
+     sigemptyset(&act.sa_mask);
+     act.sa_flags = SA_RESTART;
+@@ -161,6 +168,7 @@ int main(int argc, char *argv[])
+                 argv[0], strerror(errno));
+         exit(1);
+     }
++#endif
+ 
+     DBufInit(&(LastTrigger.tags));
+     LastTrigger.infos = NULL;
+@@ -255,7 +263,13 @@ int main(int argc, char *argv[])
+         }
+         /* If there are any background reminders queued up, handle them */
+         if (NumQueued || Daemon) {
+-
++#ifdef __CCGO__
++            /* The Go build cannot fork; handle queued reminders in the
++               foreground, as with -f. */
++            (void) pid;
++            HandleQueuedReminders();
++            return 0;
++#else
+             if (DontFork) {
+                 HandleQueuedReminders();
+                 return 0;
+@@ -270,6 +284,7 @@ int main(int argc, char *argv[])
+                     return 1;
+                 }
+             }
++#endif
+         }
+         if (Iterations) {
+             DSEToday++;
+@@ -2222,6 +2237,16 @@ System(char const *cmd, int is_queued)
+     int do_exit = 0;
+ 
+     if (is_queued && IsServerMode()) {
++#ifdef __CCGO__
++        /* The Go build cannot fork; run the command with stdin and stdout
++           on /dev/null (or stdout on stderr in JSON mode) and wait for it. */
++        (void) kid;
++        (void) fd;
++        (void) status;
++        (void) do_exit;
++        rem_system_devnull(cmd, JSONMode);
++        return;
++#endif
+         do_exit = 1;
+         /* Server mode... redirect stdin and stdout to /dev/null */
+         kid = fork();
+diff --git a/src/protos.h b/src/protos.h
+index 2288ee6d..78a05e3a 100644
+--- a/src/protos.h
++++ b/src/protos.h
+@@ -42,6 +42,18 @@
+ #include "dynbuf.h"
+ #include <ctype.h>
+ 
++#ifdef __CCGO__
++/* The Go build (modernc.org/ccgo) cannot fork or popen.  These hooks are
++   implemented in Go; see the remindgo repository. */
++FILE *rem_popen(char const *cmd, char const *mode);
++int rem_pclose(FILE *fp);
++void rem_system_devnull(char const *cmd, int stdout_to_stderr);
++void rem_limit_execution_time(int seconds);
++void rem_unlimit_execution_time(void);
++#define popen(cmd, mode) rem_popen((cmd), (mode))
++#define pclose(fp) rem_pclose(fp)
++#endif
++
+ int CallUserFunc (char const *name, int nargs, ParsePtr p);
+ int DoFset (ParsePtr p);
+ int DoFunset (ParsePtr p);
+diff --git a/src/queue.c b/src/queue.c
+index d987b3d3..df944164 100644
+--- a/src/queue.c
++++ b/src/queue.c
+@@ -363,6 +363,13 @@ void HandleQueuedReminders(void)
+     }
+ 
+     if (ShouldFork || Daemon) {
++#ifdef __CCGO__
++        /* See the note about sigaction() in main.c */
++        (void) sa;
++        signal(SIGINT, SigIntHandler);
++        signal(SIGCONT, SigContHandler);
++        signal(SIGHUP, SigHupHandler);
++#else
+         sa.sa_handler = SigIntHandler;
+         sa.sa_flags = SA_RESTART;
+         sigemptyset(&sa.sa_mask);
+@@ -371,6 +378,7 @@ void HandleQueuedReminders(void)
+         (void) sigaction(SIGCONT, &sa, NULL);
+         sa.sa_handler = SigHupHandler;
+         (void) sigaction(SIGHUP, &sa, NULL);
++#endif
+     }
+ 
+ #ifdef USE_INOTIFY

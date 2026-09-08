@@ -1,0 +1,6 @@
+*.gz
+*.xz
+*.o.go
+go.work*
+log-*
+/remind

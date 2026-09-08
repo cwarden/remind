@@ -1,0 +1,9 @@
+{
+	"autogen": "linux/amd64",
+	"autotag": ".",
+	"autoupdate": "linux/amd64",
+	"download": [
+		{"re": "linux/amd64", "files": ["https://dianne.skoll.ca/projects/remind/download/remind-06.03.02.tar.gz"]}
+	],
+	"test": "linux/amd64"
+}
