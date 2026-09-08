@@ -2,7 +2,7 @@
 # Use of this source code is governed by the GNU General Public License,
 # Version 2, which can be found in the LICENSE file.
 
-.PHONY:	all build clean dev download editor generate patch test work
+.PHONY:	all build clean dev download editor generate lint patch test work
 
 # Keep the exit status of pipelines such as `go run generator.go | tee`.
 SHELL = /bin/bash
@@ -24,6 +24,11 @@ build:
 clean:
 	rm -f log-* cpu.test mem.test *.out go.work* remind
 	go clean
+
+# The generated package is excluded from vet; the unsafe.Pointer check is
+# disabled because the libc calling convention passes C pointers as uintptr.
+lint:
+	go vet -unsafeptr=false ./cmd/... ./libshim
 
 editor:
 	gofmt -l -s -w . 2>&1 | tee log-editor
