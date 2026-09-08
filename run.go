@@ -9,10 +9,8 @@ package remind // import "github.com/cwarden/remind/v6"
 import (
 	"fmt"
 	"os"
-	"os/signal"
 	"runtime"
 	"sync"
-	"syscall"
 	"unsafe"
 
 	"github.com/cwarden/remind/v6/libshim"
@@ -48,7 +46,8 @@ const Builtin = true
 //
 // Limits: a run that queues timed reminders without -q waits for them in
 // this process; --max-execution-time ends the whole process when it
-// expires; and abort() is fatal, as in C.
+// expires; abort() is fatal, as in C; and no signal handlers are installed,
+// so $ExpressionTimeLimit and the -z mode signals have no effect.
 func Run(args []string, stdin []byte) (*Result, error) {
 	runMu.Lock()
 	defer runMu.Unlock()
@@ -103,9 +102,6 @@ func Run(args []string, stdin []byte) (*Result, error) {
 	}
 	Xrem_flush_file_cache(tls)
 	libshim.Xrem_unlimit_execution_time(tls)
-	// remind installs handlers for these with signal(), which libc backs
-	// with os/signal.Notify on a channel owned by the TLS discarded above.
-	signal.Reset(syscall.SIGALRM, syscall.SIGXCPU)
 
 	res := &Result{ExitCode: int(rc)}
 	if res.Stdout, err = readBack(out); err != nil {

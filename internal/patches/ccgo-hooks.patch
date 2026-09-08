@@ -52,7 +52,7 @@ index 9e0c0a25..1feee59d 100644
  static void
  ProcessLongOption(char const *arg)
 diff --git a/src/main.c b/src/main.c
-index 2fd82591..607743ce 100644
+index 2fd82591..8fd1fd85 100644
 --- a/src/main.c
 +++ b/src/main.c
 @@ -144,6 +144,13 @@ int main(int argc, char *argv[])
@@ -63,8 +63,8 @@ index 2fd82591..607743ce 100644
 +    /* modernc.org/libc delivers signals cooperatively through signal();
 +       its sigaction() installs an unusable kernel handler. */
 +    (void) act;
-+    signal(SIGALRM, sigalrm);
-+    signal(SIGXCPU, sigxcpu);
++    rem_signal(SIGALRM, sigalrm);
++    rem_signal(SIGXCPU, sigxcpu);
 +#else
      act.sa_handler = sigalrm;
      sigemptyset(&act.sa_mask);
@@ -118,10 +118,10 @@ index 2fd82591..607743ce 100644
          /* Server mode... redirect stdin and stdout to /dev/null */
          kid = fork();
 diff --git a/src/protos.h b/src/protos.h
-index 2288ee6d..b06fe19a 100644
+index 2288ee6d..1ca4ca35 100644
 --- a/src/protos.h
 +++ b/src/protos.h
-@@ -42,6 +42,26 @@
+@@ -42,6 +42,28 @@
  #include "dynbuf.h"
  #include <ctype.h>
  
@@ -135,12 +135,14 @@ index 2288ee6d..b06fe19a 100644
 +void rem_unlimit_execution_time(void);
 +void rem_exit(int status);
 +int rem_atexit(void (*func)(void));
++typedef void (*rem_sighandler_t)(int);
++rem_sighandler_t rem_signal(int sig, rem_sighandler_t handler);
 +void rem_flush_file_cache(void);
 +#define popen(cmd, mode) rem_popen((cmd), (mode))
 +#define pclose(fp) rem_pclose(fp)
 +/* When remind runs inside another Go program, exit() must unwind to the
-+   caller instead of ending the process, and the caller runs the handlers
-+   registered with atexit(). */
++   caller instead of ending the process, the caller runs the handlers
++   registered with atexit(), and rem_signal() installs no handlers. */
 +#define exit(status) rem_exit(status)
 +#define atexit(func) rem_atexit(func)
 +#endif
@@ -149,7 +151,7 @@ index 2288ee6d..b06fe19a 100644
  int DoFset (ParsePtr p);
  int DoFunset (ParsePtr p);
 diff --git a/src/queue.c b/src/queue.c
-index d987b3d3..df944164 100644
+index d987b3d3..ecb3c0c1 100644
 --- a/src/queue.c
 +++ b/src/queue.c
 @@ -363,6 +363,13 @@ void HandleQueuedReminders(void)
@@ -159,9 +161,9 @@ index d987b3d3..df944164 100644
 +#ifdef __CCGO__
 +        /* See the note about sigaction() in main.c */
 +        (void) sa;
-+        signal(SIGINT, SigIntHandler);
-+        signal(SIGCONT, SigContHandler);
-+        signal(SIGHUP, SigHupHandler);
++        rem_signal(SIGINT, SigIntHandler);
++        rem_signal(SIGCONT, SigContHandler);
++        rem_signal(SIGHUP, SigHupHandler);
 +#else
          sa.sa_handler = SigIntHandler;
          sa.sa_flags = SA_RESTART;

@@ -1570,10 +1570,10 @@ func resetGlobals() {
 			Fvalue:      __ccgo_ts + 5002,
 		},
 		4: {
-			Fname:       __ccgo_ts + 9258,
+			Fname:       __ccgo_ts + 9205,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9258,
+			Fvalue:      __ccgo_ts + 9205,
 		},
 		5: {
 			Fname:       __ccgo_ts + 22799,
@@ -1582,10 +1582,10 @@ func resetGlobals() {
 			Fvalue:      __ccgo_ts + 5089,
 		},
 		6: {
-			Fname:       __ccgo_ts + 9278,
+			Fname:       __ccgo_ts + 9225,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9278,
+			Fvalue:      __ccgo_ts + 9225,
 		},
 		7: {
 			Fname:       __ccgo_ts + 22802,
@@ -1620,10 +1620,10 @@ func resetGlobals() {
 			Ftype1:      int32(m_SPECIAL_TYPE1),
 		},
 		13: {
-			Fname:       __ccgo_ts + 9312,
+			Fname:       __ccgo_ts + 9259,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9312,
+			Fvalue:      __ccgo_ts + 9259,
 		},
 		14: {
 			Fname:       __ccgo_ts + 22853,
@@ -1701,10 +1701,10 @@ func resetGlobals() {
 			Ftype1:      int32(m_SPECIAL_TYPE1),
 		},
 		27: {
-			Fname:       __ccgo_ts + 9243,
+			Fname:       __ccgo_ts + 9190,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9243,
+			Fvalue:      __ccgo_ts + 9190,
 		},
 		28: {
 			Fname:       __ccgo_ts + 23018,
@@ -1729,10 +1729,10 @@ func resetGlobals() {
 			Fmax:        int32(500),
 		},
 		31: {
-			Fname:       __ccgo_ts + 9188,
+			Fname:       __ccgo_ts + 9302,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9188,
+			Fvalue:      __ccgo_ts + 9302,
 		},
 		32: {
 			Fname:       __ccgo_ts + 23049,
@@ -1789,10 +1789,10 @@ func resetGlobals() {
 			Fvalue:      __ccgo_ts + 5092,
 		},
 		42: {
-			Fname:       __ccgo_ts + 9235,
+			Fname:       __ccgo_ts + 9182,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9235,
+			Fvalue:      __ccgo_ts + 9182,
 		},
 		43: {
 			Fname:  __ccgo_ts + 23132,
@@ -1800,16 +1800,16 @@ func resetGlobals() {
 			Fvalue: uintptr(unsafe.Pointer(&XJSONMode)),
 		},
 		44: {
-			Fname:       __ccgo_ts + 9273,
+			Fname:       __ccgo_ts + 9220,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9273,
+			Fvalue:      __ccgo_ts + 9220,
 		},
 		45: {
-			Fname:       __ccgo_ts + 9268,
+			Fname:       __ccgo_ts + 9215,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9268,
+			Fvalue:      __ccgo_ts + 9215,
 		},
 		46: {
 			Fname:       __ccgo_ts + 23141,
@@ -1858,10 +1858,10 @@ func resetGlobals() {
 			Ftype1:      int32(m_SPECIAL_TYPE1),
 		},
 		55: {
-			Fname:       __ccgo_ts + 9252,
+			Fname:       __ccgo_ts + 9199,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9252,
+			Fvalue:      __ccgo_ts + 9199,
 		},
 		56: {
 			Fname:       __ccgo_ts + 23214,
@@ -1918,10 +1918,10 @@ func resetGlobals() {
 			Fmax:        int32(m_INT_MAX10),
 		},
 		64: {
-			Fname:       __ccgo_ts + 9264,
+			Fname:       __ccgo_ts + 9211,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9264,
+			Fvalue:      __ccgo_ts + 9211,
 		},
 		65: {
 			Fname:       __ccgo_ts + 23330,
@@ -1938,10 +1938,10 @@ func resetGlobals() {
 			Fvalue:      __ccgo_ts + 4968,
 		},
 		67: {
-			Fname:       __ccgo_ts + 9154,
+			Fname:       __ccgo_ts + 9268,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9154,
+			Fvalue:      __ccgo_ts + 9268,
 		},
 		68: {
 			Fname:       __ccgo_ts + 23349,
@@ -1955,10 +1955,10 @@ func resetGlobals() {
 			Fvalue: uintptr(unsafe.Pointer(&XNextMode)),
 		},
 		70: {
-			Fname:       __ccgo_ts + 9303,
+			Fname:       __ccgo_ts + 9250,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9303,
+			Fvalue:      __ccgo_ts + 9250,
 		},
 		71: {
 			Fname:       __ccgo_ts + 23363,
@@ -1987,10 +1987,10 @@ func resetGlobals() {
 			Fvalue: uintptr(unsafe.Pointer(&XNumTriggered)),
 		},
 		76: {
-			Fname:       __ccgo_ts + 9295,
+			Fname:       __ccgo_ts + 9242,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9295,
+			Fvalue:      __ccgo_ts + 9242,
 		},
 		77: {
 			Fname:       __ccgo_ts + 23414,
@@ -2037,16 +2037,16 @@ func resetGlobals() {
 			Fvalue: uintptr(unsafe.Pointer(&XRunDisabled)),
 		},
 		85: {
-			Fname:       __ccgo_ts + 9195,
+			Fname:       __ccgo_ts + 9309,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9195,
+			Fvalue:      __ccgo_ts + 9309,
 		},
 		86: {
-			Fname:       __ccgo_ts + 9285,
+			Fname:       __ccgo_ts + 9232,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9285,
+			Fvalue:      __ccgo_ts + 9232,
 		},
 		87: {
 			Fname:  __ccgo_ts + 23479,
@@ -2081,10 +2081,10 @@ func resetGlobals() {
 			Fmax:        int32(132),
 		},
 		93: {
-			Fname:       __ccgo_ts + 9204,
+			Fname:       __ccgo_ts + 9318,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9204,
+			Fvalue:      __ccgo_ts + 9318,
 		},
 		94: {
 			Fname:       __ccgo_ts + 23540,
@@ -2129,10 +2129,10 @@ func resetGlobals() {
 			Fmax:        int32(1),
 		},
 		102: {
-			Fname:       __ccgo_ts + 9179,
+			Fname:       __ccgo_ts + 9293,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9179,
+			Fvalue:      __ccgo_ts + 9293,
 		},
 		103: {
 			Fname:       __ccgo_ts + 23629,
@@ -2173,10 +2173,10 @@ func resetGlobals() {
 			Ftype1: int32(m_SPECIAL_TYPE1),
 		},
 		111: {
-			Fname:       __ccgo_ts + 9161,
+			Fname:       __ccgo_ts + 9275,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9161,
+			Fvalue:      __ccgo_ts + 9275,
 		},
 		112: {
 			Fname:  __ccgo_ts + 2508,
@@ -2243,10 +2243,10 @@ func resetGlobals() {
 			Fvalue:      __ccgo_ts + 5095,
 		},
 		126: {
-			Fname:       __ccgo_ts + 9169,
+			Fname:       __ccgo_ts + 9283,
 			Fmodifiable: int8(1),
 			Ftype1:      int32(m_TRANS_TYPE1),
-			Fvalue:      __ccgo_ts + 9169,
+			Fvalue:      __ccgo_ts + 9283,
 		},
 	}
 	_VarStack = libc.UintptrFromInt32(0)
@@ -2258,7 +2258,7 @@ func resetGlobals() {
 	XCalMonths = *new(int32)
 	XCalPad = int32(1)
 	XCalSepLine = int32(1)
-	XCalType = __ccgo_ts + 9149
+	XCalType = __ccgo_ts + 9135
 	XCalWeeks = *new(int32)
 	XCalWidth = int32(80)
 	XCalculateUTC = int32(1)
@@ -2272,13 +2272,13 @@ func resetGlobals() {
 	XDateSep = int8('-')
 	XDateTimeSep = int8('@')
 	XDayName = [7]uintptr{
-		0: __ccgo_ts + 9154,
-		1: __ccgo_ts + 9161,
-		2: __ccgo_ts + 9169,
-		3: __ccgo_ts + 9179,
-		4: __ccgo_ts + 9188,
-		5: __ccgo_ts + 9195,
-		6: __ccgo_ts + 9204,
+		0: __ccgo_ts + 9268,
+		1: __ccgo_ts + 9275,
+		2: __ccgo_ts + 9283,
+		3: __ccgo_ts + 9293,
+		4: __ccgo_ts + 9302,
+		5: __ccgo_ts + 9309,
+		6: __ccgo_ts + 9318,
 	}
 	XDebugFlag = *new(int32)
 	XDedupeReminders = *new(int32)
@@ -2301,8 +2301,8 @@ func resetGlobals() {
 	XDontSuppressQuoteMarkers = *new(int32)
 	XDynamicHplu = __ccgo_ts + 4079
 	XDynamicMplu = __ccgo_ts + 4079
-	XEndSent = __ccgo_ts + 9321
-	XEndSentIg = __ccgo_ts + 9135
+	XEndSent = __ccgo_ts + 9140
+	XEndSentIg = __ccgo_ts + 9144
 	XErrFp = *new(uintptr)
 	XErrMsg = [123]uintptr{
 		0:   __ccgo_ts + 9325,
@@ -3181,7 +3181,7 @@ func resetGlobals() {
 	XLocalDSEToday = *new(int32)
 	XLocalSysTime = -int32(1)
 	XLocalTimeZone = *new(uintptr)
-	XLocation = __ccgo_ts + 9142
+	XLocation = __ccgo_ts + 9175
 	XLongDeg = *new(int32)
 	XLongMin = *new(int32)
 	XLongSec = *new(int32)
@@ -3240,18 +3240,18 @@ func resetGlobals() {
 		},
 	}
 	XMonthName = [12]uintptr{
-		0:  __ccgo_ts + 9235,
-		1:  __ccgo_ts + 9243,
-		2:  __ccgo_ts + 9252,
-		3:  __ccgo_ts + 9258,
-		4:  __ccgo_ts + 9264,
-		5:  __ccgo_ts + 9268,
-		6:  __ccgo_ts + 9273,
-		7:  __ccgo_ts + 9278,
-		8:  __ccgo_ts + 9285,
-		9:  __ccgo_ts + 9295,
-		10: __ccgo_ts + 9303,
-		11: __ccgo_ts + 9312,
+		0:  __ccgo_ts + 9182,
+		1:  __ccgo_ts + 9190,
+		2:  __ccgo_ts + 9199,
+		3:  __ccgo_ts + 9205,
+		4:  __ccgo_ts + 9211,
+		5:  __ccgo_ts + 9215,
+		6:  __ccgo_ts + 9220,
+		7:  __ccgo_ts + 9225,
+		8:  __ccgo_ts + 9232,
+		9:  __ccgo_ts + 9242,
+		10: __ccgo_ts + 9250,
+		11: __ccgo_ts + 9259,
 	}
 	XMsgCommand = *new(uintptr)
 	XNextMode = *new(int32)
@@ -3287,7 +3287,7 @@ func resetGlobals() {
 	XSuppressImplicitRemWarnings = *new(int32)
 	XSuppressLRM = *new(int32)
 	XSynthesizeTags = *new(int32)
-	XSysDir = __ccgo_ts + 9211
+	XSysDir = __ccgo_ts + 9151
 	XSysTime = -int32(1)
 	XTerminalBackground = -int32(1)
 	XTerminalHyperlinks = -int32(1)

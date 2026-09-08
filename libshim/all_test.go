@@ -250,3 +250,13 @@ func TestAtexitHandlersRunInReverseOrderDuringInProcessRun(t *testing.T) {
 		t.Errorf("handlers ran again: %v", exitHandlerCalls)
 	}
 }
+
+func TestSignalInstallsNothingDuringInProcessRun(t *testing.T) {
+	tls := newTLS(t)
+	SetExitHook(func(int32) { panic("exit") })
+	defer SetExitHook(nil)
+	fa := *(*uintptr)(unsafe.Pointer(&struct{ f func(*libc.TLS, int32) }{func(*libc.TLS, int32) {}}))
+	if r := Xrem_signal(tls, int32(syscall.SIGALRM), fa); r != libc.SIG_DFL {
+		t.Errorf("signal returned %d, want SIG_DFL", r)
+	}
+}

@@ -211,6 +211,21 @@ func RunExitHandlers(tls *libc.TLS) {
 	}
 }
 
+// Xrem_signal implements signal() for the __CCGO__ build. During an
+// in-process run it installs nothing and reports SIG_DFL: remind's handlers
+// would apply to the whole host process, and the cooperative signal check
+// libc adds to every function return once a handler exists slows a run by
+// about a tenth. Otherwise it defers to libc.
+func Xrem_signal(tls *libc.TLS, sig int32, handler uintptr) uintptr {
+	mu.Lock()
+	inProcess := exitHook != nil
+	mu.Unlock()
+	if inProcess {
+		return libc.SIG_DFL
+	}
+	return libc.Xsignal(tls, sig, handler)
+}
+
 // Xrem_exit implements exit() for the __CCGO__ build. Without an exit hook
 // it ends the process through libc, running atexit handlers as exit does.
 func Xrem_exit(tls *libc.TLS, status int32) {
