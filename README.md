@@ -68,6 +68,12 @@ Environment variables honoured by the generator:
 | `GO_GENERATE_KEEP` | keep the work directory |
 | `GO_GENERATE_DEV` | emit ccgo debugging aids and use `../libc` and `../ccgo/v4` checkouts |
 
+Two runs of the generator on the same inputs produce files that differ only
+in the order of the string literal table (and therefore in the offsets that
+refer to it); ccgo assigns those offsets in map iteration order. Regenerate
+and commit only when the sources, the patch, the ccgo flags, or the pinned
+ccgo and libc versions change.
+
 The C sources get five small changes under `#ifdef __CCGO__`, kept in
 `internal/patches/ccgo-hooks.patch`: `popen` and `pclose` are routed to Go
 implementations, `sigaction` is replaced by `signal`, and the three `fork`
