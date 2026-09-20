@@ -1,0 +1,42 @@
+diff --git a/src/dorem.c b/src/dorem.c
+index 9ccae77..845ddce 100644
+--- a/src/dorem.c
++++ b/src/dorem.c
+@@ -36,6 +36,10 @@ static int ShouldQueueReminder(Trigger const *t, TimeTrig const *tim, int dse);
+ 
+ static int CalledEnterTimezone = 0;
+ 
++/* Value of SysTime when EnterTimezone was called.  It is -1 unless a time
++   was given on the command line or we are producing a calendar. */
++static int SavedSysTime = -1;
++
+ int AdjustTriggerForTimeZone(Trigger *trig, int dse, TimeTrig *tim, int debug_ok)
+ {
+     int y, m, d, hour, minute;
+@@ -90,12 +94,15 @@ void ExitTimezone(char const *tz)
+     (void) tz_set_tz(LocalTimeZone);
+ 
+     DSEToday = LocalDSEToday;
+-    SysTime = LocalSysTime;
++    /* Do not set SysTime to LocalSysTime: that is the time the program
++       started, and a SysTime other than -1 makes SystemTime(0) return it
++       instead of the current time when a queued reminder is triggered. */
++    SysTime = SavedSysTime;
+     FromDSE(DSEToday, &CurYear, &CurMon, &CurDay);
+ 
+     if (DebugFlag & DB_SWITCH_ZONE) {
+         fprintf(stderr, "TZ exit %s: %04d-%02d-%02d %02d:%02d\n", tz,
+-                CurYear, CurMon+1, CurDay, SysTime / 3600, (SysTime/60) % 60);
++                CurYear, CurMon+1, CurDay, SystemTime(0) / 3600, (SystemTime(0)/60) % 60);
+     }
+     return;
+ }
+@@ -132,6 +139,8 @@ void EnterTimezone(char const *tz)
+ 
+     t = mktime(&tm);    /* Convert local time to seconds */
+ 
++    SavedSysTime = SysTime;
++
+     /* Set target timezone */
+     (void) tz_set_tz(tz);
+ 

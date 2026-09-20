@@ -7397,6 +7397,12 @@ type Titimerspec = struct {
 
 var _CalledEnterTimezone = int32(0)
 
+// C documentation
+//
+//	/* Value of SysTime when EnterTimezone was called.  It is -1 unless a time
+//	   was given on the command line or we are producing a calendar. */
+var _SavedSysTime = -int32(1)
+
 func XAdjustTriggerForTimeZone(tls *libc.TLS, trig uintptr, dse int32, tim uintptr, debug_ok int32) (r1 int32) {
 	bp := tls.Alloc(160)
 	defer tls.Free(160)
@@ -7448,10 +7454,13 @@ func XExitTimezone(tls *libc.TLS, tz uintptr) {
 	/* Revert to our local time zone */
 	Xtz_set_tz(tls, XLocalTimeZone)
 	XDSEToday = XLocalDSEToday
-	XSysTime = XLocalSysTime
+	/* Do not set SysTime to LocalSysTime: that is the time the program
+	   started, and a SysTime other than -1 makes SystemTime(0) return it
+	   instead of the current time when a queued reminder is triggered. */
+	XSysTime = _SavedSysTime
 	XFromDSE(tls, XDSEToday, uintptr(unsafe.Pointer(&XCurYear)), uintptr(unsafe.Pointer(&XCurMon)), uintptr(unsafe.Pointer(&XCurDay)))
 	if XDebugFlag&int32(m_DB_SWITCH_ZONE1) != 0 {
-		libc.Xfprintf(tls, libc.Xstderr, __ccgo_ts+2187, libc.VaList(bp+8, tz, XCurYear, XCurMon+int32(1), XCurDay, XSysTime/int32(3600), XSysTime/int32(60)%int32(60)))
+		libc.Xfprintf(tls, libc.Xstderr, __ccgo_ts+2187, libc.VaList(bp+8, tz, XCurYear, XCurMon+int32(1), XCurDay, XSystemTime(tls, 0)/int32(3600), XSystemTime(tls, 0)/int32(60)%int32(60)))
 	}
 	return
 }
@@ -7484,6 +7493,7 @@ func XEnterTimezone(tls *libc.TLS, tz uintptr) {
 	(**(**Ttm)(__ccgo_up(bp))).Ftm_yday = 0                   /* Ignored by mktime */
 	(**(**Ttm)(__ccgo_up(bp))).Ftm_isdst = -int32(1)          /* Information not available */
 	**(**Ttime_t)(__ccgo_up(bp + 72)) = libc.Xmktime(tls, bp) /* Convert local time to seconds */
+	_SavedSysTime = XSysTime
 	/* Set target timezone */
 	Xtz_set_tz(tls, tz)
 	/* Update our variables */
@@ -39815,10 +39825,10 @@ var _SysVarArr = [127]TSysVar{
 		Fvalue:      __ccgo_ts + 5002,
 	},
 	4: {
-		Fname:       __ccgo_ts + 9158,
+		Fname:       __ccgo_ts + 12285,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 9158,
+		Fvalue:      __ccgo_ts + 12285,
 	},
 	5: {
 		Fname:       __ccgo_ts + 22814,
@@ -39827,10 +39837,10 @@ var _SysVarArr = [127]TSysVar{
 		Fvalue:      __ccgo_ts + 5089,
 	},
 	6: {
-		Fname:       __ccgo_ts + 9178,
+		Fname:       __ccgo_ts + 12305,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 9178,
+		Fvalue:      __ccgo_ts + 12305,
 	},
 	7: {
 		Fname:       __ccgo_ts + 22817,
@@ -39865,10 +39875,10 @@ var _SysVarArr = [127]TSysVar{
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	13: {
-		Fname:       __ccgo_ts + 9212,
+		Fname:       __ccgo_ts + 12339,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 9212,
+		Fvalue:      __ccgo_ts + 12339,
 	},
 	14: {
 		Fname:       __ccgo_ts + 22868,
@@ -39946,10 +39956,10 @@ var _SysVarArr = [127]TSysVar{
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	27: {
-		Fname:       __ccgo_ts + 9143,
+		Fname:       __ccgo_ts + 12270,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 9143,
+		Fvalue:      __ccgo_ts + 12270,
 	},
 	28: {
 		Fname:       __ccgo_ts + 23033,
@@ -39974,10 +39984,10 @@ var _SysVarArr = [127]TSysVar{
 		Fmax:        int32(500),
 	},
 	31: {
-		Fname:       __ccgo_ts + 12401,
+		Fname:       __ccgo_ts + 12405,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12401,
+		Fvalue:      __ccgo_ts + 12405,
 	},
 	32: {
 		Fname:       __ccgo_ts + 23064,
@@ -40034,10 +40044,10 @@ var _SysVarArr = [127]TSysVar{
 		Fvalue:      __ccgo_ts + 5092,
 	},
 	42: {
-		Fname:       __ccgo_ts + 9135,
+		Fname:       __ccgo_ts + 12262,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 9135,
+		Fvalue:      __ccgo_ts + 12262,
 	},
 	43: {
 		Fname:  __ccgo_ts + 23147,
@@ -40045,16 +40055,16 @@ var _SysVarArr = [127]TSysVar{
 		Fvalue: uintptr(unsafe.Pointer(&XJSONMode)),
 	},
 	44: {
-		Fname:       __ccgo_ts + 9173,
+		Fname:       __ccgo_ts + 12300,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 9173,
+		Fvalue:      __ccgo_ts + 12300,
 	},
 	45: {
-		Fname:       __ccgo_ts + 9168,
+		Fname:       __ccgo_ts + 12295,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 9168,
+		Fvalue:      __ccgo_ts + 12295,
 	},
 	46: {
 		Fname:       __ccgo_ts + 23156,
@@ -40103,10 +40113,10 @@ var _SysVarArr = [127]TSysVar{
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	55: {
-		Fname:       __ccgo_ts + 9152,
+		Fname:       __ccgo_ts + 12279,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 9152,
+		Fvalue:      __ccgo_ts + 12279,
 	},
 	56: {
 		Fname:       __ccgo_ts + 23229,
@@ -40163,10 +40173,10 @@ var _SysVarArr = [127]TSysVar{
 		Fmax:        int32(m_INT_MAX10),
 	},
 	64: {
-		Fname:       __ccgo_ts + 9164,
+		Fname:       __ccgo_ts + 12291,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 9164,
+		Fvalue:      __ccgo_ts + 12291,
 	},
 	65: {
 		Fname:       __ccgo_ts + 23345,
@@ -40183,10 +40193,10 @@ var _SysVarArr = [127]TSysVar{
 		Fvalue:      __ccgo_ts + 4968,
 	},
 	67: {
-		Fname:       __ccgo_ts + 12367,
+		Fname:       __ccgo_ts + 12371,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12367,
+		Fvalue:      __ccgo_ts + 12371,
 	},
 	68: {
 		Fname:       __ccgo_ts + 23364,
@@ -40200,10 +40210,10 @@ var _SysVarArr = [127]TSysVar{
 		Fvalue: uintptr(unsafe.Pointer(&XNextMode)),
 	},
 	70: {
-		Fname:       __ccgo_ts + 9203,
+		Fname:       __ccgo_ts + 12330,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 9203,
+		Fvalue:      __ccgo_ts + 12330,
 	},
 	71: {
 		Fname:       __ccgo_ts + 23378,
@@ -40232,10 +40242,10 @@ var _SysVarArr = [127]TSysVar{
 		Fvalue: uintptr(unsafe.Pointer(&XNumTriggered)),
 	},
 	76: {
-		Fname:       __ccgo_ts + 9195,
+		Fname:       __ccgo_ts + 12322,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 9195,
+		Fvalue:      __ccgo_ts + 12322,
 	},
 	77: {
 		Fname:       __ccgo_ts + 23429,
@@ -40282,16 +40292,16 @@ var _SysVarArr = [127]TSysVar{
 		Fvalue: uintptr(unsafe.Pointer(&XRunDisabled)),
 	},
 	85: {
-		Fname:       __ccgo_ts + 12408,
+		Fname:       __ccgo_ts + 12412,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12408,
+		Fvalue:      __ccgo_ts + 12412,
 	},
 	86: {
-		Fname:       __ccgo_ts + 9185,
+		Fname:       __ccgo_ts + 12312,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 9185,
+		Fvalue:      __ccgo_ts + 12312,
 	},
 	87: {
 		Fname:  __ccgo_ts + 23494,
@@ -40326,10 +40336,10 @@ var _SysVarArr = [127]TSysVar{
 		Fmax:        int32(132),
 	},
 	93: {
-		Fname:       __ccgo_ts + 12417,
+		Fname:       __ccgo_ts + 12421,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12417,
+		Fvalue:      __ccgo_ts + 12421,
 	},
 	94: {
 		Fname:       __ccgo_ts + 23555,
@@ -40374,10 +40384,10 @@ var _SysVarArr = [127]TSysVar{
 		Fmax:        int32(1),
 	},
 	102: {
-		Fname:       __ccgo_ts + 12392,
+		Fname:       __ccgo_ts + 12396,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12392,
+		Fvalue:      __ccgo_ts + 12396,
 	},
 	103: {
 		Fname:       __ccgo_ts + 23644,
@@ -40418,10 +40428,10 @@ var _SysVarArr = [127]TSysVar{
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	111: {
-		Fname:       __ccgo_ts + 12374,
+		Fname:       __ccgo_ts + 12378,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12374,
+		Fvalue:      __ccgo_ts + 12378,
 	},
 	112: {
 		Fname:  __ccgo_ts + 2508,
@@ -40488,10 +40498,10 @@ var _SysVarArr = [127]TSysVar{
 		Fvalue:      __ccgo_ts + 5095,
 	},
 	126: {
-		Fname:       __ccgo_ts + 12382,
+		Fname:       __ccgo_ts + 12386,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12382,
+		Fvalue:      __ccgo_ts + 12386,
 	},
 }
 
@@ -41333,7 +41343,7 @@ var XCalPad = int32(1)
 
 var XCalSepLine = int32(1)
 
-var XCalType = __ccgo_ts + 12362
+var XCalType = __ccgo_ts + 12366
 
 var XCalWeeks int32
 
@@ -41360,13 +41370,13 @@ var XDateSep = uint8('-')
 var XDateTimeSep = uint8('@')
 
 var XDayName = [7]uintptr{
-	0: __ccgo_ts + 12367,
-	1: __ccgo_ts + 12374,
-	2: __ccgo_ts + 12382,
-	3: __ccgo_ts + 12392,
-	4: __ccgo_ts + 12401,
-	5: __ccgo_ts + 12408,
-	6: __ccgo_ts + 12417,
+	0: __ccgo_ts + 12371,
+	1: __ccgo_ts + 12378,
+	2: __ccgo_ts + 12386,
+	3: __ccgo_ts + 12396,
+	4: __ccgo_ts + 12405,
+	5: __ccgo_ts + 12412,
+	6: __ccgo_ts + 12421,
 }
 
 var XDebugFlag int32
@@ -41411,136 +41421,136 @@ var XDynamicHplu = __ccgo_ts + 4079
 
 var XDynamicMplu = __ccgo_ts + 4079
 
-var XEndSent = __ccgo_ts + 12424
+var XEndSent = __ccgo_ts + 12355
 
 var XEndSentIg = __ccgo_ts + 12348
 
 var XErrFp uintptr
 
 var XErrMsg = [123]uintptr{
-	0:   __ccgo_ts + 9221,
-	1:   __ccgo_ts + 9224,
-	2:   __ccgo_ts + 9236,
-	3:   __ccgo_ts + 9250,
-	4:   __ccgo_ts + 9273,
-	5:   __ccgo_ts + 9292,
-	6:   __ccgo_ts + 9304,
-	7:   __ccgo_ts + 9323,
-	8:   __ccgo_ts + 9341,
-	9:   __ccgo_ts + 9362,
-	10:  __ccgo_ts + 9376,
-	11:  __ccgo_ts + 9394,
-	12:  __ccgo_ts + 9439,
-	13:  __ccgo_ts + 9475,
-	14:  __ccgo_ts + 9488,
-	15:  __ccgo_ts + 9502,
-	16:  __ccgo_ts + 9516,
-	17:  __ccgo_ts + 9554,
-	18:  __ccgo_ts + 9571,
-	19:  __ccgo_ts + 9590,
-	20:  __ccgo_ts + 9613,
-	21:  __ccgo_ts + 9636,
-	22:  __ccgo_ts + 9646,
-	23:  __ccgo_ts + 9693,
-	24:  __ccgo_ts + 9708,
-	25:  __ccgo_ts + 9731,
-	26:  __ccgo_ts + 9752,
-	27:  __ccgo_ts + 9771,
-	28:  __ccgo_ts + 9787,
-	29:  __ccgo_ts + 9803,
-	30:  __ccgo_ts + 9818,
-	31:  __ccgo_ts + 9834,
-	32:  __ccgo_ts + 9869,
-	33:  __ccgo_ts + 9881,
-	34:  __ccgo_ts + 9903,
-	35:  __ccgo_ts + 9923,
-	36:  __ccgo_ts + 9948,
-	37:  __ccgo_ts + 9974,
-	38:  __ccgo_ts + 9999,
-	39:  __ccgo_ts + 10027,
-	40:  __ccgo_ts + 10079,
-	41:  __ccgo_ts + 10092,
-	42:  __ccgo_ts + 10105,
-	43:  __ccgo_ts + 10124,
+	0:   __ccgo_ts + 9135,
+	1:   __ccgo_ts + 9138,
+	2:   __ccgo_ts + 9150,
+	3:   __ccgo_ts + 9164,
+	4:   __ccgo_ts + 9187,
+	5:   __ccgo_ts + 9206,
+	6:   __ccgo_ts + 9218,
+	7:   __ccgo_ts + 9237,
+	8:   __ccgo_ts + 9255,
+	9:   __ccgo_ts + 9276,
+	10:  __ccgo_ts + 9290,
+	11:  __ccgo_ts + 9308,
+	12:  __ccgo_ts + 9353,
+	13:  __ccgo_ts + 9389,
+	14:  __ccgo_ts + 9402,
+	15:  __ccgo_ts + 9416,
+	16:  __ccgo_ts + 9430,
+	17:  __ccgo_ts + 9468,
+	18:  __ccgo_ts + 9485,
+	19:  __ccgo_ts + 9504,
+	20:  __ccgo_ts + 9527,
+	21:  __ccgo_ts + 9550,
+	22:  __ccgo_ts + 9560,
+	23:  __ccgo_ts + 9607,
+	24:  __ccgo_ts + 9622,
+	25:  __ccgo_ts + 9645,
+	26:  __ccgo_ts + 9666,
+	27:  __ccgo_ts + 9685,
+	28:  __ccgo_ts + 9701,
+	29:  __ccgo_ts + 9717,
+	30:  __ccgo_ts + 9732,
+	31:  __ccgo_ts + 9748,
+	32:  __ccgo_ts + 9783,
+	33:  __ccgo_ts + 9795,
+	34:  __ccgo_ts + 9817,
+	35:  __ccgo_ts + 9837,
+	36:  __ccgo_ts + 9862,
+	37:  __ccgo_ts + 9888,
+	38:  __ccgo_ts + 9913,
+	39:  __ccgo_ts + 9941,
+	40:  __ccgo_ts + 9993,
+	41:  __ccgo_ts + 10006,
+	42:  __ccgo_ts + 10019,
+	43:  __ccgo_ts + 10038,
 	44:  __ccgo_ts,
-	45:  __ccgo_ts + 10158,
-	46:  __ccgo_ts + 10188,
-	47:  __ccgo_ts + 10233,
-	48:  __ccgo_ts + 10271,
-	49:  __ccgo_ts + 10316,
-	50:  __ccgo_ts + 10361,
-	51:  __ccgo_ts + 10382,
-	52:  __ccgo_ts + 10404,
-	53:  __ccgo_ts + 10424,
-	54:  __ccgo_ts + 10438,
-	55:  __ccgo_ts + 10473,
-	56:  __ccgo_ts + 10494,
-	57:  __ccgo_ts + 10526,
-	58:  __ccgo_ts + 10587,
-	59:  __ccgo_ts + 10607,
-	60:  __ccgo_ts + 10629,
-	61:  __ccgo_ts + 10649,
-	62:  __ccgo_ts + 10689,
-	63:  __ccgo_ts + 10712,
-	64:  __ccgo_ts + 10728,
-	65:  __ccgo_ts + 10752,
-	66:  __ccgo_ts + 10790,
-	67:  __ccgo_ts + 10835,
-	68:  __ccgo_ts + 10864,
-	69:  __ccgo_ts + 10892,
-	70:  __ccgo_ts + 10919,
-	71:  __ccgo_ts + 10951,
-	72:  __ccgo_ts + 10975,
-	73:  __ccgo_ts + 11008,
-	74:  __ccgo_ts + 11038,
-	75:  __ccgo_ts + 11071,
-	76:  __ccgo_ts + 11080,
-	77:  __ccgo_ts + 11086,
-	78:  __ccgo_ts + 11098,
-	79:  __ccgo_ts + 11114,
-	80:  __ccgo_ts + 11129,
-	81:  __ccgo_ts + 11137,
-	82:  __ccgo_ts + 9818,
-	83:  __ccgo_ts + 11179,
-	84:  __ccgo_ts + 11221,
-	85:  __ccgo_ts + 11245,
-	86:  __ccgo_ts + 11265,
-	87:  __ccgo_ts + 11283,
-	88:  __ccgo_ts + 11310,
-	89:  __ccgo_ts + 11337,
-	90:  __ccgo_ts + 11367,
-	91:  __ccgo_ts + 11384,
-	92:  __ccgo_ts + 11406,
-	93:  __ccgo_ts + 11425,
-	94:  __ccgo_ts + 11458,
-	95:  __ccgo_ts + 11482,
-	96:  __ccgo_ts + 11496,
-	97:  __ccgo_ts + 11535,
-	98:  __ccgo_ts + 11552,
-	99:  __ccgo_ts + 11576,
-	100: __ccgo_ts + 11609,
-	101: __ccgo_ts + 11633,
-	102: __ccgo_ts + 11649,
-	103: __ccgo_ts + 11670,
-	104: __ccgo_ts + 11716,
-	105: __ccgo_ts + 11739,
-	106: __ccgo_ts + 11763,
-	107: __ccgo_ts + 11797,
-	108: __ccgo_ts + 11843,
-	109: __ccgo_ts + 11883,
-	110: __ccgo_ts + 11911,
-	111: __ccgo_ts + 11946,
-	112: __ccgo_ts + 11965,
-	113: __ccgo_ts + 12001,
-	114: __ccgo_ts + 12028,
-	115: __ccgo_ts + 12067,
-	116: __ccgo_ts + 12107,
-	117: __ccgo_ts + 12167,
-	118: __ccgo_ts + 12201,
-	119: __ccgo_ts + 12236,
-	120: __ccgo_ts + 12270,
-	121: __ccgo_ts + 12306,
-	122: __ccgo_ts + 12326,
+	45:  __ccgo_ts + 10072,
+	46:  __ccgo_ts + 10102,
+	47:  __ccgo_ts + 10147,
+	48:  __ccgo_ts + 10185,
+	49:  __ccgo_ts + 10230,
+	50:  __ccgo_ts + 10275,
+	51:  __ccgo_ts + 10296,
+	52:  __ccgo_ts + 10318,
+	53:  __ccgo_ts + 10338,
+	54:  __ccgo_ts + 10352,
+	55:  __ccgo_ts + 10387,
+	56:  __ccgo_ts + 10408,
+	57:  __ccgo_ts + 10440,
+	58:  __ccgo_ts + 10501,
+	59:  __ccgo_ts + 10521,
+	60:  __ccgo_ts + 10543,
+	61:  __ccgo_ts + 10563,
+	62:  __ccgo_ts + 10603,
+	63:  __ccgo_ts + 10626,
+	64:  __ccgo_ts + 10642,
+	65:  __ccgo_ts + 10666,
+	66:  __ccgo_ts + 10704,
+	67:  __ccgo_ts + 10749,
+	68:  __ccgo_ts + 10778,
+	69:  __ccgo_ts + 10806,
+	70:  __ccgo_ts + 10833,
+	71:  __ccgo_ts + 10865,
+	72:  __ccgo_ts + 10889,
+	73:  __ccgo_ts + 10922,
+	74:  __ccgo_ts + 10952,
+	75:  __ccgo_ts + 10985,
+	76:  __ccgo_ts + 10994,
+	77:  __ccgo_ts + 11000,
+	78:  __ccgo_ts + 11012,
+	79:  __ccgo_ts + 11028,
+	80:  __ccgo_ts + 11043,
+	81:  __ccgo_ts + 11051,
+	82:  __ccgo_ts + 9732,
+	83:  __ccgo_ts + 11093,
+	84:  __ccgo_ts + 11135,
+	85:  __ccgo_ts + 11159,
+	86:  __ccgo_ts + 11179,
+	87:  __ccgo_ts + 11197,
+	88:  __ccgo_ts + 11224,
+	89:  __ccgo_ts + 11251,
+	90:  __ccgo_ts + 11281,
+	91:  __ccgo_ts + 11298,
+	92:  __ccgo_ts + 11320,
+	93:  __ccgo_ts + 11339,
+	94:  __ccgo_ts + 11372,
+	95:  __ccgo_ts + 11396,
+	96:  __ccgo_ts + 11410,
+	97:  __ccgo_ts + 11449,
+	98:  __ccgo_ts + 11466,
+	99:  __ccgo_ts + 11490,
+	100: __ccgo_ts + 11523,
+	101: __ccgo_ts + 11547,
+	102: __ccgo_ts + 11563,
+	103: __ccgo_ts + 11584,
+	104: __ccgo_ts + 11630,
+	105: __ccgo_ts + 11653,
+	106: __ccgo_ts + 11677,
+	107: __ccgo_ts + 11711,
+	108: __ccgo_ts + 11757,
+	109: __ccgo_ts + 11797,
+	110: __ccgo_ts + 11825,
+	111: __ccgo_ts + 11860,
+	112: __ccgo_ts + 11879,
+	113: __ccgo_ts + 11915,
+	114: __ccgo_ts + 11942,
+	115: __ccgo_ts + 11981,
+	116: __ccgo_ts + 12021,
+	117: __ccgo_ts + 12081,
+	118: __ccgo_ts + 12115,
+	119: __ccgo_ts + 12150,
+	120: __ccgo_ts + 12184,
+	121: __ccgo_ts + 12220,
+	122: __ccgo_ts + 12240,
 }
 
 /*
@@ -42495,7 +42505,7 @@ var XLocalSysTime = -int32(1)
 
 var XLocalTimeZone uintptr
 
-var XLocation = __ccgo_ts + 12355
+var XLocation = __ccgo_ts + 12359
 
 var XLongDeg int32
 
@@ -42572,18 +42582,18 @@ var XMonthIndex = [2][12]int32{
 }
 
 var XMonthName = [12]uintptr{
-	0:  __ccgo_ts + 9135,
-	1:  __ccgo_ts + 9143,
-	2:  __ccgo_ts + 9152,
-	3:  __ccgo_ts + 9158,
-	4:  __ccgo_ts + 9164,
-	5:  __ccgo_ts + 9168,
-	6:  __ccgo_ts + 9173,
-	7:  __ccgo_ts + 9178,
-	8:  __ccgo_ts + 9185,
-	9:  __ccgo_ts + 9195,
-	10: __ccgo_ts + 9203,
-	11: __ccgo_ts + 9212,
+	0:  __ccgo_ts + 12262,
+	1:  __ccgo_ts + 12270,
+	2:  __ccgo_ts + 12279,
+	3:  __ccgo_ts + 12285,
+	4:  __ccgo_ts + 12291,
+	5:  __ccgo_ts + 12295,
+	6:  __ccgo_ts + 12300,
+	7:  __ccgo_ts + 12305,
+	8:  __ccgo_ts + 12312,
+	9:  __ccgo_ts + 12322,
+	10: __ccgo_ts + 12330,
+	11: __ccgo_ts + 12339,
 }
 
 var XMsgCommand uintptr
@@ -43396,4 +43406,4 @@ var Xwatch_fd = -int32(1)
 
 var __ccgo_ts = (*reflect.StringHeader)(unsafe.Pointer(&__ccgo_ts1)).Data
 
-var __ccgo_ts1 = "\x00+\x00|\x00-\x00\x1b(0\x00\x1b(B\x00v\x00k\x00u\x00w\x00n\x00m\x00x\x00l\x00t\x00j\x00q\x00┴\x00┐\x00┤\x00┬\x00┼\x00└\x00│\x00┌\x00├\x00┘\x00─\x00\x1b[0;30m\x00\x1b[0;34m\x00\x1b[0;32m\x00\x1b[0;36m\x00\x1b[0;31m\x00\x1b[0;35m\x00\x1b[0;33m\x00\x1b[0;37m\x00\x1b[30;1m\x00\x1b[34;1m\x00\x1b[32;1m\x00\x1b[36;1m\x00\x1b[31;1m\x00\x1b[35;1m\x00\x1b[33;1m\x00\x1b[37;1m\x00\x1b[0;40m\x00\x1b[0;44m\x00\x1b[0;42m\x00\x1b[0;46m\x00\x1b[0;41m\x00\x1b[0;45m\x00\x1b[0;43m\x00\x1b[0;47m\x00🌑\x00🌓\x00🌕\x00🌗\x00%s\x00\u200e\x00\\b\x00\\f\x00\\n\x00\\r\x00\\t\x00\\\"\x00\\\\\x00\\u%04x\x00%c\x00\"\x00\":%d,\x00\":\"\x00\",\x00\":\"%04d-%02d-%02d\",\x00\":\"%04d-%02d-%02dT%02d:%02d\",\x00\":\"%02d:%02d\",\x00\x1b[0m\x00\x1b[48;5;%dm\x00\x1b[38;5;%dm\x00\x1b[48;2;%d;%d;%dm\x00\x1b[38;2;%d;%d;%dm\x00%d %d %d\x00%d\x00%d %*d %*d %27[^\x01]\x00%s %s\x00utf-8\x00[\n\x00\n]\n\x00# translations\n\x00\n\x00,\n\x00{\n\"caltype\":\"weekly\",\x00\"translations\":\x00,\x00\"dates\":[\x00{\"dayname\":\"%s\",\"date\":\"%04d-%02d-%02d\",\"year\":%d,\"month\":\"%s\",\"day\":%d}\x00],\"entries\":[\x00\n]\n}\x00%d %s %s %s \x00%d %s %s \x00%d %s \x00\x1b[1m\x00%s\n\x00# rem2ps begin\x00# rem2ps2 begin\x00{\n\x00%s %d %d %d %d\n\x00 %s\x00caltype\x00monthly\x00monthname\x00year\x00daysinmonth\x00firstwkday\x00mondayfirst\x00\"daynames\":[\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"],\x00%s %d\n\x00prevmonthname\x00daysinprevmonth\x00prevmonthyear\x00nextmonthname\x00daysinnextmonth\x00nextmonthyear\x00\"entries\":[\n\x00# rem2ps end\x00# rem2ps2 end\x00]\n}\x00%d \x00 \x00\x1b]8;;%s\x1b\\\x00\x1b]8;;\x1b\\\x00%s %s: %s\n\x00%s: %s\x0005.00.03\x00Unrecognized command; interpreting as REM\x00%s %d\x00PostScript\x00PSFile\x00%d %d %d \x00COLOR\x00SHADE\x00WEEK\x00%31[^\x01]\x00FORMATTED\x00COLOUR\x00MOON\x00calprefix\x00calprefix(%d)\x00calsuffix\x00calsuffix(%d)\x00 *\x00 %s \x00 * \x00* \x00time\x00time_in_tz\x00nexttime\x00nextdtime\x00tdelta\x00trep\x00duration\x00url\x00\"info\":{\x00},\x00\"wd\":[\x00\"%s\"\x00],\x00d\x00y\x00is_todo\x00complete_through\x00back\x00delta\x00rep\x00\"trigbase\":\"%04d-%02d-%02d\",\x00\"localomit\":[\x00skip\x00SKIP\x00BEFORE\x00AFTER\x00until\x00once\x00scanfrom\x00max_overdue\x00from\x00priority\x00eventstart\x00eventstart_in_tz\x00eventduration\x00maybe_uncomputable\x00noqueue\x00sched\x00warn\x00omitfunc\x00addomit\x00tags\x00tz\x00filename\x00lineno\x00lineno_start\x00passthru\x00nonconst_expr\x00if_depth\x00r\x00g\x00b\x00rawbody\x00%\"\x00\"calendar_body\":\"\x00\"plain_body\":\"\x00\"body\":\"\x00# fileinfo %d %s\n\x00{\"date\":\"%04d-%02d-%02d\",\x00}\x00%04d/%02d/%02d\x00+%d\x00pm\x00am\x00%d%c%02d%s-%d%c%02d%s%s \x00%02d%c%02d-%02d%c%02d%s \x00%d%c%02d%.64s \x00%02d%c%02d \x00__syn__%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\x00Unable to initialize function hash table: Out of memory.  Exiting.\n\x00Error adjusting trigger to local time zone\x00%s(%s): Trig(tz_adj %s) = %s, %d %s, %d AT %02d:%02d\x00 DURATION %02d:%02d\x00ExitTimezone called without EnterTimezone!!!\n\x00TZ exit %s: %04d-%02d-%02d %02d:%02d\n\x00EnterTimezone called twice in a row!!!\n\x00TZ enter %s: %04d-%02d-%02d %02d:%02d\n\x00WARN\x00Undefined %s function: `%s'\x00%s function `%s' defined at %s(%s) should take 1 argument but actually takes %d\x00%s function `%s' defined at %s(%s) does not use its argument\x00trigdate\x00trigdatetime\x00T\x00Td\x00Tm\x00Tw\x00Ty\x00SATISFY: constant 0 will never be true\x00SATISFY: constant \"\" will never be true\x00SATISFY: expression has no reference to trigdate() or $T...\x00#!P! Cannot parse next line\x00#!P: Cannot purge SATISFY-type reminders\x00%s: %s\n\x00#!P! Problem calculating trigger date\x00#!P: Next line may have expired, but contains non-constant expression\x00#!P: or a relative SCANFROM clause\x00#!P: Next line has expired, but contains expression...  please verify\x00#!P: Expired: %s\n\x00},\n\x00%s: `%s'\x00COMPLETE-THROUGH\x00`%d' is not recognized as a year (%d-%d) or a day number (1-31)\x00Warning: OMIT is ignored if you use OMITFUNC\x00OMITFUNC counts as a non-constant expression\x00Missing REM type; assuming MSG\x00Weekday name(s) required\x0006.01.03\x00Warning: Consider using SCANFROM -28 with recurring ADDOMIT\x00Warning: Consider using SCANFROM -7 with recurring ADDOMIT\x00Warning: Consider using SCANFROM with recurring ADDOMIT\x00Warning: UNTIL/THROUGH date earlier than start date\x00Warning: UNTIL/THROUGH date earlier than FROM date\x00Warning: UNTIL/THROUGH date earlier than SCANFROM date\x00Warning: Useless use of UNTIL with fully-specified date and no *rep\x00SCHED\x00OMITFUNC\x00UNTIL\x00THROUGH\x00SCANFROM\x00FROM\x00Relative SCANFROM counts as a non-constant expression\x00{\"banner\":\"\x00%04d/%02d/%02d \x00%s%s%s\n\x00msgprefix\x00msgprefix(%d)\x00msgsuffix\x00msgsuffix(%d)\x00NOTE endreminder\x00Delta: Bad OMITFUNC? %s\x00%s(%s): Trig(satisfied) = %s, %d %s, %d\x00 AT %02d:%02d\x00%s(%d)\x00%s: `%s': %s\x00MSG\x00MSF\x00RUN\x00CAL\x00PS\x00PSFILE\x00%s(1)\x00subst_%cx\x00subst_%c\x00subst_colonx\x00subst_bangx\x00subst_questionx\x00subst_atx\x00subst_hashx\x00subst_colon\x00subst_bang\x00subst_question\x00subst_at\x00subst_hash\x00s\x00Function `%s' defined at %s(%s) should take %d argument%s, but actually takes %d\x00day\x00days\x00ago\x00from now\x00subst_ampm\x00subst_ampm(%d)\x00subst_ordinal\x00subst_ordinal(%d)\x00st\x00nd\x00rd\x00th\x00Warning: Unterminated %%<...> substitution sequence\x00Warning: Unterminated %%(...) substitution sequence\x00subst_\x00Warning: Unterminated %%{...} substitution sequence\x00No substition function `%s' defined\x00(%d,'%04d-%02d-%02d',%02d:%02d)\x00%s(%d,'%04d-%02d-%02d',%02d:%02d)\x00tomorrow\x00yesterday\x00today\x0005.03.04\x00`%%%c' substitution sequence should not be used without an AT clause\x00on\x00%s, %d %s, %d\x00%s %s, %d %s, %d\x00in %d days' time\x00%d days ago\x00%02d%c%02d%c%04d\x00%s %02d%c%02d%c%04d\x00%s, %d %s\x00%s %s, %d %s\x00%02d%c%02d\x00%s %02d%c%02d\x00%s, %s %d%s, %d\x00%s %s, %s %d%s, %d\x00%s, %s %d%s\x00%s %s, %s %d%s\x00%04d%c%02d%c%02d\x00%s %04d%c%02d%c%02d\x00 (%s)\x00's\x00s'\x00%02d\x00%s, %d%s %s, %d\x00%s %s, %d%s %s, %d\x00%s, %d%s %s\x00%s %s, %d%s %s\x00done\x00now\x00%d %s%s %s\x00minute\x00hour\x00%d %s%s %s %d %s%s %s\x00and\x00%d %s %s\x00%d %s %s %d %s%s %s\x00%d %s, %d %s%s %s %d %s%s %s\x00%d%c%02d%s\x00%s %d%c%02d%s\x00at\x00is\x00was\x00are\x00were\x00 => \x00?\x00Global variable `%s' makes expression non-constant\x00%s(): %s\x00%s(\x00) => \x00Non-constant built-in function `%s' makes expression non-constant\x00const\x00Non-constant expression converted to constant by `const' built-in function\x00%s %s(\x00, \x00)\n\x00) => %s\n\x00%s(...) => %s\n\x00User function `%s' defined in non-constant context makes expression non-constant\x00System variable `$%s' makes expression non-constant\x00$%s\x00`%s': %s\x00==\x00!=\x00>=\x00<=\x00>\x00<\x00???\x00*\x00!\x00&&\x00||\x00%s `%c' (%s `%c%c'?)\x00did you mean\x00%s `%c'\x00)\x00%s `)'\x00+-*/%&|=<>!)\x00(\x00/\x00%\x00Parsed expression: \x00  => Error: %s\n\x00  => \x00  Unparsed: %s\n\x00^-- %s\n\x00here\x00arg[%d]\x00(%c%s\x00(%s\x00(%s \x00UNKNOWN_OPERATOR\x00\\x%02x\x00...\x00%04d%c%02d%c%02d%c%02d%c%02d\x00ERR\x00 Expression nodes allocated: %d\n\x00Expression nodes high-water: %d\n\x00    Expression nodes leaked: %d\n\x00     Parse level high-water: %d\n\x00join\x00\\x00 is not a valid escape sequence\x00Unable to initialize filename hash table: Out of memory.  Exiting.\n\x00Out of Memory!\n\x00-stdin-\x00.purged\x00Cannot open `%s' for writing: %s\x00__EOF__\x00Reading `%s': Found in cache\x00Reading `-': Reading stdin\x00Reading `%s': Opening file on disk\x00Can't open `%s' for reading: %s\x00Caching file `%s' in memory\x00a\x00Found cached directory listing for `%s'\x00Scanning directory `%s' for *.rem files\x00Caching directory `%s' listing\x00/*.rem\x00Reading command `%s': Found in cache\x00Executing `%s' for INCLUDECMD and caching as `%s'\x00/dev/null\x00Cannot execute `%s': %s\x00SECURITY: Won't read non-root-owned file or directory when running as root!\x00SECURITY: Won't read world-writable file or directory!\x00_\x00abs\x00access\x00adawn\x00adusk\x00ampm\x00ansicolor\x00args\x00asc\x00baseyr\x00catch\x00catcherr\x00char\x00choose\x00codepoint\x00coerce\x00columns\x00current\x00date\x00datepart\x00datetime\x00dawn\x00daysinmon\x00defined\x00dosubst\x00dusk\x00easterdate\x00escape\x00eval\x00evaltrig\x00filedate\x00filedatetime\x00filedir\x00getenv\x00hebdate\x00hebday\x00hebmon\x00hebyear\x00hex\x00htmlescape\x00htmlstriptags\x00iif\x00index\x00isany\x00isconst\x00isdst\x00isleap\x00isomitted\x00ivritmon\x00language\x00localtoutc\x00lower\x00max\x00mbchar\x00mbindex\x00mblower\x00mbpad\x00mbstrlen\x00mbsubstr\x00mbupper\x00min\x00minsfromutc\x00mon\x00monnum\x00moondate\x00moondatetime\x00moonphase\x00moonrise\x00moonrisedir\x00moonset\x00moonsetdir\x00moontime\x00multitrig\x00ndawn\x00ndusk\x00nonconst\x00nonomitted\x00ord\x00orthodoxeaster\x00ostype\x00pad\x00plural\x00psmoon\x00psshade\x00realcurrent\x00realnow\x00realtoday\x00rows\x00sgn\x00shell\x00shellescape\x00slide\x00soleq\x00stdout\x00strlen\x00substr\x00sunrise\x00sunset\x00timepart\x00timezone\x00trig\x00trigback\x00trigbase\x00trigcompletethrough\x00trigdelta\x00trigduration\x00trigeventduration\x00trigeventstart\x00trigeventstarttz\x00trigfrom\x00trigger\x00triginfo\x00trigistodo\x00trigmaxoverdue\x00trigpriority\x00trigrep\x00trigscanfrom\x00trigtags\x00trigtime\x00trigtimedelta\x00trigtimerep\x00trigtimetz\x00trigtz\x00triguntil\x00trigvalid\x00typeof\x00tzconvert\x00upper\x00utctolocal\x00value\x00version\x00weekno\x00wkday\x00wkdaynum\x00int\x00string\x00coerce(): Invalid type `%s'\x00coerce(): Cannot convert %s to %s\x00%X\x00AM\x00PM\x00%04d%c%02d%c%02d%c12%c%02d\x0012%c%02d\x00%04d%c%02d%c%02d%c%d%c%02d\x00%d%c%02d\x00ordx\x00ordx(%d)\x00%d%s\x00isconst(\x00isany(\x00, ?\x00catch(\x00, ?) => \x00*, \x00*) => \x00choose(\x00choose(): %s\x0006.03.02\x00UNIX\x00TTY\x00UNKNOWN\x00BLOCKDEV\x00CHARDEV\x00DIR\x00PIPE\x00SYMLINK\x00FILE\x00SOCKET\x00value(\x00?) => \x00Nonexistence of global variable `%s' makes value() non-constant\x00%d %s %d AT %02d:%02d\x00%d %s %d\x00iif(\x00.\x00INT\x00DATE\x00TIME\x00STRING\x00DATETIME\x00English\x00\\a\x00\\v\x00&lt;\x00&gt;\x00&amp;\x00%Z\x00TZ\x00UTC\x0003.01.02\x00psshade() is deprecated; use SPECIAL SHADE instead.\x00/_A LineWidth 2 div def \x00_A _A moveto \x00BoxWidth _A sub _A lineto BoxWidth _A sub BoxHeight _A sub lineto \x00_A BoxHeight _A sub lineto closepath %d 100 div setgray fill 0.0 setgray\x00_A BoxHeight _A sub lineto closepath %d 100 div %d 100 div %d 100 div setrgbcolor fill 0.0 setgray\x00psmoon() is deprecated; use SPECIAL MOON instead.\x00DaySize 2 div\x00EntrySize\x00gsave 0 setgray newpath Border %s add BoxHeight Border sub %s sub\x00 %s 0 360 arc closepath\x00 fill\x00 stroke\x00 newpath Border %s add BoxHeight Border sub %s sub\x00 %s 90 270 arc closepath fill\x00 %s 270 90 arc closepath fill\x00 Border %s add %s add Border add BoxHeight border sub %s sub %s sub moveto /EntryFont findfont %s scalefont setfont (%s) show\x00 grestore\x00Warning: SCANFROM is ignored in two-argument form of evaltrig()\x00Cannot use AT clause in multitrig() function\x00/dev/tty\x00\n# Built-in Functions\n\n\x00January\x00February\x00March\x00April\x00May\x00June\x00July\x00August\x00September\x00October\x00November\x00December\x00Ok\x00Missing ']'\x00Missing quote\x00Expression too complex\x00Invalid month name\x00Missing ')'\x00Undefined function\x00Illegal character\x00Invalid weekday name\x00Out of memory\x00Ill-formed number\x00Warning: PUSH-VARS without matching POP-VARS\x00POP-VARS without matching PUSH-VARS\x00Can't coerce\x00Type mismatch\x00Date overflow\x00POP-FUNCS without matching PUSH-FUNCS\x00Division by zero\x00Undefined variable\x00Unexpected end of line\x00Unexpected end of file\x00I/O error\x00Warning: PUSH-FUNCS without matching POP-FUNCS\x00Internal error\x00Bad date specification\x00Not enough arguments\x00Too many arguments\x00Ill-formed time\x00Number too high\x00Number too low\x00Can't open file\x00INCLUDE nested too deeply (max. 9)\x00Parse error\x00Can't compute trigger\x00Too many nested IFs\x00ELSE with no matching IF\x00ENDIF with no matching IF\x00Can't OMIT every weekday\x00Extraneous token(s) on line\x00POP-OMIT-CONTEXT without matching PUSH-OMIT-CONTEXT\x00RUN disabled\x00Domain error\x00Invalid identifier\x00Too many recursive function calls\x00Cannot modify system variable\x00C library function can't represent date/time\x00Attempt to redefine built-in function\x00Can't nest function definition in expression\x00Must fully specify date to use repeat factor\x00Year specified twice\x00Month specified twice\x00Day specified twice\x00Unknown token\x00Must specify month in OMIT command\x00TODO specified twice\x00Too many full OMITs (max. 1000)\x00Warning: PUSH-OMIT-CONTEXT without matching POP-OMIT-CONTEXT\x00Error reading input\x00Expecting end-of-line\x00Invalid Hebrew date\x00iif(): odd number of arguments required\x00Warning: Missing ENDIF\x00Expecting comma\x00Weekday specified twice\x00Only use one of BEFORE, AFTER or SKIP\x00Can't nest MSG, MSF, RUN, etc. in expression\x00Repeat value specified twice\x00Delta value specified twice\x00Back value specified twice\x00ONCE keyword used twice. (Hah.)\x00Expecting time after AT\x00THROUGH/UNTIL keyword used twice\x00Incomplete date specification\x00FROM/SCANFROM keyword used twice\x00Variable\x00Value\x00*UNDEFINED*\x00Entering UserFN\x00Leaving UserFN\x00Expired\x00fork() failed - can't do queued reminders\x00Illegal system date: Year is less than %d\x00Unknown debug flag '%c'\x00Unknown option '%c'\x00Unknown user '%s'\x00Could not change gid to %d\x00Could not change uid to %d\x00Out of memory for environment\x00Missing '=' sign\x00Missing variable name\x00Missing expression\x00COMPLETE-THROUGH specified twice\x00Remind: '-i' option: %s\x00No reminders.\x00%d reminder(s) queued for later today.\x00Expecting number\x00Undefined WARN function\x00Can't convert between time zones\x00No files matching *.rem\x00String too long\x00Time specified twice\x00Cannot specify DURATION without specifying AT\x00Expecting weekday name\x00Duplicate argument name\x00Expression evaluation is disabled\x00Time limit for expression evaluation exceeded\x00COMPLETE-THROUGH specified without TODO\x00MAX-OVERDUE specified twice\x00MAX-OVERDUE specified without TODO\x00TZ specified twice\x00TZ specified for non-timed reminder\x00Invalid multibyte sequence\x00Maximum expression complexity exceeded\x00Expecting operator or end-of-expression\x00Expecting constant, variable, function call or (expression)\x00Invalid value for system variable\x00Attempt to unset built-in function\x00Attempt to PUSH built-in function\x00INCLUDECMD produced too much output\x00Input line too long\x00Too many cached lines\x00\"')]}>\x00Ottawa\x00none\x00Monday\x00Tuesday\x00Wednesday\x00Thursday\x00Friday\x00Saturday\x00Sunday\x00.?!\x00/usr/local/share/remind\x00  Entries: %lu; Buckets: %lu; Non-empty Buckets: %lu\n\x00  Maxlen: %lu; Minlen: %lu; Avglen: %.3f; Stddev: %.3f; Avg nonempty len: %.3f\n\x00  Growths: %lu; Shrinks: %lu\n\x00Tishrey\x00Heshvan\x00Kislev\x00Tevet\x00Shvat\x00Adar A\x00Adar B\x00Nisan\x00Iyar\x00Sivan\x00Tamuz\x00Av\x00Elul\x00Adar\x00תשרי\x00חשוון\x00כסלו\x00טבת\x00שבט\x00אדר א'\x00אדר ב'\x00ניסן\x00אייר\x00סיון\x00תמוז\x00אב\x00אלול\x00אדר\x00Tishri\x00Tishrei\x00Cheshvan\x00Kheshvan\x00Shevat\x00Tammuz\x00Adar 1\x00Adar I\x00אדר א\x00אדר 1\x00אדר I\x00Adar 2\x00Adar II\x00אדר ב\x00אדר 2\x00אדר II\x00Iyyar\x00GetValidHebDate: Bad adarbehave value %d\x00GetValidHebDate: (1) software error! %d\x00GetValidHebDate: (2) software error! %d\x00GetValidHebDate: (3) software error! %d\x00No Adar A in %d\x00%d %s %d: %s\x00%s(%d): IF without ENDIF\x00Illegal date on command line\n\x00REMIND_FILE\x00DOTREMINDERS\x00HOME\x00HOME environment variable not set.  Unable to determine reminder file.\n\x00/.reminders\x00\nRemind should not be installed set-uid or set-gid.\nCHECK YOUR SYSTEM SECURITY.\n\x00Out of memory!\n\x00Reminders for %w, %d%s %m, %y%o:\x00rem\x00Invoked with a NULL argv[0]; bailing because that's just plain bizarre.\n\x00%s: -@n,m,b: n must be 0, 1 or 2 (assuming 0)\n\x00%s: -@n,m,b: m must be t, 0, 1 or 2 (assuming 2)\n\x00%s: -@n,m,b: b must be 0 or 1 (assuming 0)\n\x00weekly\x00%s: `-wt': Cannot open /dev/tty: %s\n\x00Could not evaluate command-line trigger: %s\n\x00%s: `%s'\n\x00\nREMIND %s Copyright (C) 1992-2026 Dianne Skoll\n\x00Usage: remind [options] filename [date] [time] [*rep]\n\x00Options:\n\x00 -n     Output next occurrence of reminders in simple format\n\x00 -r     Disable RUN directives\n\x00 -@[n,m,b] Colorize COLOR/SHADE reminders\n\x00 -c[a][n] Produce a calendar for n (default 1) months\n\x00 -c[a]+[n] Produce a calendar for n (default 1) weeks\n\x00 -w[n[,p[,s]]]  Specify width, padding and spacing of calendar\n\x00 -s[a][+][n] Produce `simple calendar' for n (1) months (weeks)\n\x00 -p[a][n] Same as -s, but input compatible with rem2ps\n\x00 -l     Prefix each simple calendar line with line number and filename comment\n\x00 -v     Verbose mode\n\x00 -o     Ignore ONCE directives\n\x00 -t[n]  Trigger all future (or those within `n' days)\n\x00 -h     `Hush' mode - be very quiet\n\x00 -a     Don't trigger timed reminders immediately - just queue them\n\x00 -q     Don't queue timed reminders\n\x00 -f     Trigger timed reminders by staying in foreground\n\x00 -z[n]  Enter daemon mode, waking every n (1) minutes.\n\x00 -d...  Debug: See man page for details\n\x00 -e     Divert messages normally sent to stderr to stdout\n\x00 -b[n]  Time format for cal: 0=am/pm, 1=24hr, 2=none\n\x00 -x[n]  Iteration limit for SATISFY clause (def=1000)\n\x00 -kcmd  Run `cmd' for MSG-type reminders\n\x00 -g[dddd] Sort reminders by date, time, priority, and 'timedness'\n\x00 -ivar=val Initialize var to val and preserve var\n\x00 -m     Start calendar with Monday rather than Sunday\n\x00 -y     Synthesize tags for tagless reminders\n\x00 -j[n]  Run in 'purge' mode.  [n = INCLUDE depth]\n\x00\nLong Options:\n\x00 --version                Print Remind version\n\x00 --hide-completed-todos   Don't show completed todos on calendar\n\x00 --only-todos             Only issue TODO reminders\n\x00 --only-events            Do not issue TODO reminders\n\x00 --json                   Use JSON output instead of plain-text\n\x00 --max-execution-time=n   Limit execution time to n seconds\n\x00 --max-expr-complexity=n  Limit expression evaluation to n nodes per line\n\x00 --print-config-cmd       Print ./configure cmd used to build Remind\n\x00 --print-errs             Print all possible error messages\n\x00 --print-tokens           Print all possible Remind tokens\n\x00 --no-fmt                 Do not format FMT-style reminders\n\x00 --file=filename          Use option to set file\n\x00\nRemind home page: %s\n\x00https://dianne.skoll.ca/projects/remind/\x00HOME=%s\x00SHELL=%s\x00USER=%s\x00LOGNAME=%s\x00-i option: %s: %s\n\x00Too many trusted users (%d max)\n\x00test\x00Enabling test mode: This is meant for the acceptance test.\nDo not use --test in production.\nIn test mode, the system time is fixed at 2025-01-06@19:00\n\x00no-fmt\x00only-todos\x00remind: Cannot combine --only-todos and --only-events\n\x00only-events\x00flush\x00json\x00print-config-cmd\x00./configure --prefix=/usr/local\x00print-errs\x00hide-completed-todos\x00print-tokens\x00max-expr-complexity=%lu\x00file=\x00%s: --file= can only be used once (ignoring second)\n\x00%s: file= requires an argument\n\x00max-execution-time=%d\x00%s: --max-execution-time must be non-negative\n\x00%s: Unknown long option --%s\n\x00\x1b]11;?\x1b\\\x00rgb:%x/%x/%x\x00===== S T A T I S T I C S =====\n\x00DynBuf Mallocs: %lu mallocs; %lu bytes\n\x00\nVariable hash table statistics:\n\x00\nFunction hash table statistics:\n\x00\nDedupe hash table statistics:\n\x00\nTranslation hash table statistics:\n\x00 Max expr node evals / line: %lu (%s:%d)\n\x00 Max expr node evals / line: %lu\n\x00      Total expr node evals: %lu\n\x00\n\nmax-execution-time exceeded.\n\n\x00{\"noreminders\":\"\x00}\n\x00]\n\x00%s: `%s': %s.\n\x00#!P\x00#!P! Could not parse next line: %s\n\x00%s(%d): \x00%s(%d:%d): \x00       \x00/etc/localtime\x00#!P: The next IF evaluated false...\x00#!P: REM statements in IF block not checked for purging.\x00#!P: The previous IF evaluated true.\x00#!P: REM statements in ELSE block not checked for purging\x00#!P: The next IFTRIG did not trigger.\x00#!P: REM statements in IFTRIG block not checked for purging.\x0005.02.03\x00ON\x00OFF\x00INVALID_WKDAY\x00INVALID_MON\x00Warning: Unable to save ONCE timestamp to %s: %s\x00%d\n# This is a timestamp file used by Remind to track ONCE reminders.\n# Do not edit or delete it.\n\x00i\x00span\x00??? Software error!  No done scratchpad in MarkupToAnsi\x00\x1b[3m\x00\x1b[9m\x00\x1b[4m\x00Unclosed formatting tags\x00color = \"#%2x%2x%2x\" %n\x00fgcolor = \"#%2x%2x%2x\" %n\x00foreground = \"#%2x%2x%2x\" %n\x00bgcolor = \"#%2x%2x%2x\" %n\x00background = \"#%2x%2x%2x\" %n\x00Unknown attribute in <span> tag at %s\x00Markup tags and attribute names should be all lower-case\x00Tag is missing closing >\x00Unclosed quote in tag <%s>\x00span \x00Unsupported formatting tag <%s>\x00</%s> tag without any opening tag\x00<%s> tag closed by </%s>\x00\x1b]8;;\x00\x1b\\\x00Unmatched PUSH-OMIT-CONTEXT at %s(%d)\x00POP-OMIT-CONTEXT at %s:%d matches PUSH-OMIT-CONTEXT in different file: %s:%d\x00%s('%04d-%02d-%02d')\x00OMIT: UNTIL not allowed; did you mean THROUGH?\x00%s: `%s' (OMIT)\x0004.02.09\x00You have OMITted everything!  The space-time continuum is at risk.\x00Error: THROUGH date earlier than start date\x00Global Full OMITs (%d of maximum allowed %d):\n\x00\tNone.\n\x00\t%04d%c%02d%c%02d\n\x00Global Partial OMITs (%d of maximum allowed %d):\n\x00\t%02d%c%02d\n\x00Global Weekday OMITs:\n\x00\t%s\n\x00{\x00response\x00queued\x00nqueued\x00\"command\":\"STATUS\"}\n\x00NOTE queued %d\n\x00{\"response\":\"reread\",\"command\":\"SIGHUP\"}\n\x00NOTE SIGHUP\nNOTE reread\n\x00Cannot stat %s - not running as daemon!\x00{\"response\":\"reminder\",\x00qid\x00ttime\x00tdatetime\x00NOTE reminder %s\x00*\n\x00\"}\n\x00NOTE endreminder\n\x00Contents of AT queue:%s\x00Trigger: %02d%c%02d  Activate: %02d%c%02d  Rep: %d  Delta: %d  Sched: %s\x00(%d)\x00SPECIAL\x00Text: %s %s%s%s%s%s\x00To terminate program, send SIGQUIT (probably Ctrl-\\ on the keyboard.)%s\x00SCHED: Considering %04d%c%02d%c%02d%c%02d%c%02d\n\x00{\"response\":\"queue\",\"queue\":\x00[\x00rundisabled\x00ntrig\x00type\x00NO_TYPE\x00MSG_TYPE\x00RUN_TYPE\x00CAL_TYPE\x00SAT_TYPE\x00PS_TYPE\x00PSF_TYPE\x00MSF_TYPE\x00PASSTHRU_TYPE\x00body\x00\"}\x00]\x00,\"command\":\"QUEUE\"}\n\x00{\"response\":\"newdate\"}\n{\"response\":\"reread\",\"command\":\"newdate\"}\n\x00NOTE newdate\nNOTE reread\n\x00{\"response\":\"reread\",\"command\":\"inotify\"}\n\x00EXIT\n\x00STATUS\n\x00QUEUE\n\x00NOTE queue\n\x00 RunDisabled=%d ntrig=%d ttime=%02d:%02d nexttime=%02d:%02d delta=%d rep=%d duration=%d \x00NULL\x00%s %s %s\n\x00NOTE endqueue\n\x00JSONQUEUE\n\x00NOTE JSONQUEUE\n\x00NOTE ENDJSONQUEUE\n\x00TRANSLATE \x00translate\x00\"translation\":{\"\x00\"},\x00\"command\":\"TRANSLATE\"}\n\x00TRANSLATE_DUMP\n\x00NOTE TRANSLATE_DUMP\n\x00translate_dump\x00\"table\":\x00\nNOTE ENDTRANSLATE_DUMP\n\x00,\"command\":\"TRANSLATE_DUMP\"}\n\x00REREAD\n\x00{\"response\":\"reread\",\"command\":\"REREAD\"}\n\x00NOTE reread\n\x00DEL \x00DEL %d\x00{\"response\":\"error\",\"error\":\"Unknown command\",\"command\":\"\x00ERR Invalid daemon command: %s\x00sortbanner\x00sortbanner('%04d/%02d/%02d')\x00after\x00april\x00august\x00banner\x00before\x00cal\x00clear-omit-context\x00complete-through\x00completed-through\x00debug\x00december\x00do\x00dumpvars\x00else\x00endif\x00errmsg\x00exit\x00expr\x00february\x00first\x00fmt\x00fourth\x00frename\x00friday\x00fset\x00funset\x00if\x00iftrig\x00in\x00include\x00includecmd\x00info\x00january\x00july\x00june\x00last\x00lastday\x00lastworkday\x00march\x00max-overdue\x00may\x00maybe-uncomputable\x00monday\x00msf\x00msg\x00november\x00october\x00omit\x00pop-funcs\x00pop-omit-context\x00pop-vars\x00preserve\x00ps\x00psfile\x00push-funcs\x00push-omit-context\x00push-vars\x00return\x00run\x00satisfy\x00saturday\x00second\x00september\x00set\x00special\x00sunday\x00sysinclude\x00tag\x00third\x00through\x00thursday\x00todo\x00tuesday\x00unset\x00wednesday\x00%.*s\n\x00# Remind Tokens\n\n\x00\n# Month Names\n\n\x00\n# Weekdays\n\n\x00LANGID\x00 \"\"\n\x00# Translation table template\n\n\x00TRANSLATE \"LANGID\" \x00\n\n\x00BANNER %s\n\x00\n# Weekday Names\n\x00SET $%s \x00\n# Month Names\n\x00\n# Other Translation-related System Variables\n\x00\n# Error Messages\n\x00\n# Other Messages\n\x00[\"[\"]\x00# Translation table\n\x00:\x00Unable to initialize translation hash table: Out of memory.  Exiting.\n\x00en\x00Invalid translation: Both original and translated must have the same printf-style formatting sequences in the same order.\x00dump\x00clear\x00generate\x00#0- +'I%123456789.hlqLjzZt\x00NextSimpleTrig %s %d\x00%s(%s): Trig(adj) = %s, %d %s, %d\x00%s(%s): %s\n\x00%s(%s): Trig = %s, %d %s, %d\x00%s(%s): %s: %04d-%02d-%02d\n\x00Invalid INFO string: Must be of the form \"Header: Value\"\x00Duplicate INFO headers are not permitted\x00Potential function definition considered non-constant because of context\x00[cmdline]\x00Function `%s' redefined: previously defined at %s(%s)\x00Function definition considered non-constant because of context\x0003.00.04\x00Warning: Function name `%s...' truncated to `%s'\x0006.02.06\x00POP-FUNCS at %s:%d matches PUSH-FUNCS in different file: %s:%d\x00Unmatched PUSH-FUNCS at %s(%d)\x00/usr/share/zoneinfo\x00dup\x00In\x00Called from\x00    \x00%s(%s): [#%d] %s function `%s'\x00\n    [\x00remaining call frames omitted\x00%d:%d\x0006.01.05\x00No time zone file found for TZ `%s'... is it valid?\x00Unable to initialize variable hash table: Out of memory.  Exiting.\n\x00C\x00Accepting \"%s\" for $Latitude/$Longitude, but you should use the \"C\" locale decimal separator \".\" instead\x00%s is deprecated; use %s instead\x00$LatDeg\x00$Latitude\x00$LatMin\x00$LatSec\x00$LongDeg\x00$Longitude\x00$LongMin\x00$LongSec\x00%.8f\x00Not setting $OnceFile: Already processed a reminder with a ONCE clause\x00@\x00`%s' UNSET without being used (previous SET: %s:%d)\x00`%s' re-SET without being used (previous SET: %s:%d)\x00Potential variable assignment considered non-constant because of context\x00Do not use [] around expression in SET command\x00Variable assignment considered non-constant because of context\x00Warning: Variable name `%.*s...' truncated to `%.*s'\x00-c\x00%s  %s\n\n\x00%s  %s\n\x00%s  \x00 <preserved>\x00 <const>\x00The following variables were set, but not subsequently used:\x00\t%s - %s %s:%d\n\x00defined at\x00AddBlankLines\x00Ago\x00Am\x00And\x00At\x00CalcUTC\x00CalMode\x00CalType\x00Daemon\x00DateSep\x00DateTimeSep\x00DedupeReminders\x00DefaultColor\x00DefaultColour\x00DefaultDelta\x00DefaultPrio\x00DefaultTDelta\x00DeltaOverride\x00DontFork\x00DontQueue\x00DontTrigAts\x00EndSent\x00EndSentIg\x00ExpressionTimeLimit\x00FirstIndent\x00FoldYear\x00FormWidth\x00Fromnow\x00HideCompletedTodos\x00Hour\x00Hplu\x00HushMode\x00IgnoreOnce\x00InfDelta\x00IntMax\x00IntMin\x00Is\x00JSONMode\x00LatDeg\x00Latitude\x00LatMin\x00LatSec\x00Location\x00LongDeg\x00Longitude\x00LongMin\x00LongSec\x00MaxCachedLines\x00MaxFullOmits\x00MaxIncludeCmdLines\x00MaxLateMinutes\x00MaxLineLength\x00MaxPartialOmits\x00MaxSatIter\x00MaxStringLen\x00MinsFromUTC\x00Minute\x00Mplu\x00NextMode\x00Now\x00NumFullOmits\x00NumPartialOmits\x00NumQueued\x00NumTrig\x00On\x00OnceFile\x00ParseUntriggered\x00Pm\x00PrefixLineNo\x00PSCal\x00Repeat\x00RunOff\x00Shaded\x00SimpleCal\x00SortByDate\x00SortByPrio\x00SortByTime\x00SubsIndent\x00SuppressImplicitWarnings\x00SuppressLRM\x00SysInclude\x00Tb\x00TerminalBackground\x00TerminalHyperlinks\x00TimeSep\x00TimetIs64bit\x00Today\x00TodoFilter\x00Tomorrow\x00Tt\x00Tu\x00U\x00Ud\x00Um\x00UntimedFirst\x00Use256Colors\x00UseBGVTColors\x00UseTrueColors\x00UseVTColors\x00Uw\x00Uy\x00WarningLevel\x00Was\x00Unmatched PUSH-VARS at %s(%d)\x00%s: `$%s'\x00POP-VARS at %s:%d matches PUSH-VARS in different file: %s:%d\x00(Security note: $RunOff variable tested.)\x00$%s: Name too long\n\x00%25s  \x00%d\n\x00Error: %s\n\x00%-10d  \x00[%d, \x00Inf)\n\x00%d]\n\x00\n# System Variables\n\n\x00$%s\n\x00"
+var __ccgo_ts1 = "\x00+\x00|\x00-\x00\x1b(0\x00\x1b(B\x00v\x00k\x00u\x00w\x00n\x00m\x00x\x00l\x00t\x00j\x00q\x00┴\x00┐\x00┤\x00┬\x00┼\x00└\x00│\x00┌\x00├\x00┘\x00─\x00\x1b[0;30m\x00\x1b[0;34m\x00\x1b[0;32m\x00\x1b[0;36m\x00\x1b[0;31m\x00\x1b[0;35m\x00\x1b[0;33m\x00\x1b[0;37m\x00\x1b[30;1m\x00\x1b[34;1m\x00\x1b[32;1m\x00\x1b[36;1m\x00\x1b[31;1m\x00\x1b[35;1m\x00\x1b[33;1m\x00\x1b[37;1m\x00\x1b[0;40m\x00\x1b[0;44m\x00\x1b[0;42m\x00\x1b[0;46m\x00\x1b[0;41m\x00\x1b[0;45m\x00\x1b[0;43m\x00\x1b[0;47m\x00🌑\x00🌓\x00🌕\x00🌗\x00%s\x00\u200e\x00\\b\x00\\f\x00\\n\x00\\r\x00\\t\x00\\\"\x00\\\\\x00\\u%04x\x00%c\x00\"\x00\":%d,\x00\":\"\x00\",\x00\":\"%04d-%02d-%02d\",\x00\":\"%04d-%02d-%02dT%02d:%02d\",\x00\":\"%02d:%02d\",\x00\x1b[0m\x00\x1b[48;5;%dm\x00\x1b[38;5;%dm\x00\x1b[48;2;%d;%d;%dm\x00\x1b[38;2;%d;%d;%dm\x00%d %d %d\x00%d\x00%d %*d %*d %27[^\x01]\x00%s %s\x00utf-8\x00[\n\x00\n]\n\x00# translations\n\x00\n\x00,\n\x00{\n\"caltype\":\"weekly\",\x00\"translations\":\x00,\x00\"dates\":[\x00{\"dayname\":\"%s\",\"date\":\"%04d-%02d-%02d\",\"year\":%d,\"month\":\"%s\",\"day\":%d}\x00],\"entries\":[\x00\n]\n}\x00%d %s %s %s \x00%d %s %s \x00%d %s \x00\x1b[1m\x00%s\n\x00# rem2ps begin\x00# rem2ps2 begin\x00{\n\x00%s %d %d %d %d\n\x00 %s\x00caltype\x00monthly\x00monthname\x00year\x00daysinmonth\x00firstwkday\x00mondayfirst\x00\"daynames\":[\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"],\x00%s %d\n\x00prevmonthname\x00daysinprevmonth\x00prevmonthyear\x00nextmonthname\x00daysinnextmonth\x00nextmonthyear\x00\"entries\":[\n\x00# rem2ps end\x00# rem2ps2 end\x00]\n}\x00%d \x00 \x00\x1b]8;;%s\x1b\\\x00\x1b]8;;\x1b\\\x00%s %s: %s\n\x00%s: %s\x0005.00.03\x00Unrecognized command; interpreting as REM\x00%s %d\x00PostScript\x00PSFile\x00%d %d %d \x00COLOR\x00SHADE\x00WEEK\x00%31[^\x01]\x00FORMATTED\x00COLOUR\x00MOON\x00calprefix\x00calprefix(%d)\x00calsuffix\x00calsuffix(%d)\x00 *\x00 %s \x00 * \x00* \x00time\x00time_in_tz\x00nexttime\x00nextdtime\x00tdelta\x00trep\x00duration\x00url\x00\"info\":{\x00},\x00\"wd\":[\x00\"%s\"\x00],\x00d\x00y\x00is_todo\x00complete_through\x00back\x00delta\x00rep\x00\"trigbase\":\"%04d-%02d-%02d\",\x00\"localomit\":[\x00skip\x00SKIP\x00BEFORE\x00AFTER\x00until\x00once\x00scanfrom\x00max_overdue\x00from\x00priority\x00eventstart\x00eventstart_in_tz\x00eventduration\x00maybe_uncomputable\x00noqueue\x00sched\x00warn\x00omitfunc\x00addomit\x00tags\x00tz\x00filename\x00lineno\x00lineno_start\x00passthru\x00nonconst_expr\x00if_depth\x00r\x00g\x00b\x00rawbody\x00%\"\x00\"calendar_body\":\"\x00\"plain_body\":\"\x00\"body\":\"\x00# fileinfo %d %s\n\x00{\"date\":\"%04d-%02d-%02d\",\x00}\x00%04d/%02d/%02d\x00+%d\x00pm\x00am\x00%d%c%02d%s-%d%c%02d%s%s \x00%02d%c%02d-%02d%c%02d%s \x00%d%c%02d%.64s \x00%02d%c%02d \x00__syn__%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\x00Unable to initialize function hash table: Out of memory.  Exiting.\n\x00Error adjusting trigger to local time zone\x00%s(%s): Trig(tz_adj %s) = %s, %d %s, %d AT %02d:%02d\x00 DURATION %02d:%02d\x00ExitTimezone called without EnterTimezone!!!\n\x00TZ exit %s: %04d-%02d-%02d %02d:%02d\n\x00EnterTimezone called twice in a row!!!\n\x00TZ enter %s: %04d-%02d-%02d %02d:%02d\n\x00WARN\x00Undefined %s function: `%s'\x00%s function `%s' defined at %s(%s) should take 1 argument but actually takes %d\x00%s function `%s' defined at %s(%s) does not use its argument\x00trigdate\x00trigdatetime\x00T\x00Td\x00Tm\x00Tw\x00Ty\x00SATISFY: constant 0 will never be true\x00SATISFY: constant \"\" will never be true\x00SATISFY: expression has no reference to trigdate() or $T...\x00#!P! Cannot parse next line\x00#!P: Cannot purge SATISFY-type reminders\x00%s: %s\n\x00#!P! Problem calculating trigger date\x00#!P: Next line may have expired, but contains non-constant expression\x00#!P: or a relative SCANFROM clause\x00#!P: Next line has expired, but contains expression...  please verify\x00#!P: Expired: %s\n\x00},\n\x00%s: `%s'\x00COMPLETE-THROUGH\x00`%d' is not recognized as a year (%d-%d) or a day number (1-31)\x00Warning: OMIT is ignored if you use OMITFUNC\x00OMITFUNC counts as a non-constant expression\x00Missing REM type; assuming MSG\x00Weekday name(s) required\x0006.01.03\x00Warning: Consider using SCANFROM -28 with recurring ADDOMIT\x00Warning: Consider using SCANFROM -7 with recurring ADDOMIT\x00Warning: Consider using SCANFROM with recurring ADDOMIT\x00Warning: UNTIL/THROUGH date earlier than start date\x00Warning: UNTIL/THROUGH date earlier than FROM date\x00Warning: UNTIL/THROUGH date earlier than SCANFROM date\x00Warning: Useless use of UNTIL with fully-specified date and no *rep\x00SCHED\x00OMITFUNC\x00UNTIL\x00THROUGH\x00SCANFROM\x00FROM\x00Relative SCANFROM counts as a non-constant expression\x00{\"banner\":\"\x00%04d/%02d/%02d \x00%s%s%s\n\x00msgprefix\x00msgprefix(%d)\x00msgsuffix\x00msgsuffix(%d)\x00NOTE endreminder\x00Delta: Bad OMITFUNC? %s\x00%s(%s): Trig(satisfied) = %s, %d %s, %d\x00 AT %02d:%02d\x00%s(%d)\x00%s: `%s': %s\x00MSG\x00MSF\x00RUN\x00CAL\x00PS\x00PSFILE\x00%s(1)\x00subst_%cx\x00subst_%c\x00subst_colonx\x00subst_bangx\x00subst_questionx\x00subst_atx\x00subst_hashx\x00subst_colon\x00subst_bang\x00subst_question\x00subst_at\x00subst_hash\x00s\x00Function `%s' defined at %s(%s) should take %d argument%s, but actually takes %d\x00day\x00days\x00ago\x00from now\x00subst_ampm\x00subst_ampm(%d)\x00subst_ordinal\x00subst_ordinal(%d)\x00st\x00nd\x00rd\x00th\x00Warning: Unterminated %%<...> substitution sequence\x00Warning: Unterminated %%(...) substitution sequence\x00subst_\x00Warning: Unterminated %%{...} substitution sequence\x00No substition function `%s' defined\x00(%d,'%04d-%02d-%02d',%02d:%02d)\x00%s(%d,'%04d-%02d-%02d',%02d:%02d)\x00tomorrow\x00yesterday\x00today\x0005.03.04\x00`%%%c' substitution sequence should not be used without an AT clause\x00on\x00%s, %d %s, %d\x00%s %s, %d %s, %d\x00in %d days' time\x00%d days ago\x00%02d%c%02d%c%04d\x00%s %02d%c%02d%c%04d\x00%s, %d %s\x00%s %s, %d %s\x00%02d%c%02d\x00%s %02d%c%02d\x00%s, %s %d%s, %d\x00%s %s, %s %d%s, %d\x00%s, %s %d%s\x00%s %s, %s %d%s\x00%04d%c%02d%c%02d\x00%s %04d%c%02d%c%02d\x00 (%s)\x00's\x00s'\x00%02d\x00%s, %d%s %s, %d\x00%s %s, %d%s %s, %d\x00%s, %d%s %s\x00%s %s, %d%s %s\x00done\x00now\x00%d %s%s %s\x00minute\x00hour\x00%d %s%s %s %d %s%s %s\x00and\x00%d %s %s\x00%d %s %s %d %s%s %s\x00%d %s, %d %s%s %s %d %s%s %s\x00%d%c%02d%s\x00%s %d%c%02d%s\x00at\x00is\x00was\x00are\x00were\x00 => \x00?\x00Global variable `%s' makes expression non-constant\x00%s(): %s\x00%s(\x00) => \x00Non-constant built-in function `%s' makes expression non-constant\x00const\x00Non-constant expression converted to constant by `const' built-in function\x00%s %s(\x00, \x00)\n\x00) => %s\n\x00%s(...) => %s\n\x00User function `%s' defined in non-constant context makes expression non-constant\x00System variable `$%s' makes expression non-constant\x00$%s\x00`%s': %s\x00==\x00!=\x00>=\x00<=\x00>\x00<\x00???\x00*\x00!\x00&&\x00||\x00%s `%c' (%s `%c%c'?)\x00did you mean\x00%s `%c'\x00)\x00%s `)'\x00+-*/%&|=<>!)\x00(\x00/\x00%\x00Parsed expression: \x00  => Error: %s\n\x00  => \x00  Unparsed: %s\n\x00^-- %s\n\x00here\x00arg[%d]\x00(%c%s\x00(%s\x00(%s \x00UNKNOWN_OPERATOR\x00\\x%02x\x00...\x00%04d%c%02d%c%02d%c%02d%c%02d\x00ERR\x00 Expression nodes allocated: %d\n\x00Expression nodes high-water: %d\n\x00    Expression nodes leaked: %d\n\x00     Parse level high-water: %d\n\x00join\x00\\x00 is not a valid escape sequence\x00Unable to initialize filename hash table: Out of memory.  Exiting.\n\x00Out of Memory!\n\x00-stdin-\x00.purged\x00Cannot open `%s' for writing: %s\x00__EOF__\x00Reading `%s': Found in cache\x00Reading `-': Reading stdin\x00Reading `%s': Opening file on disk\x00Can't open `%s' for reading: %s\x00Caching file `%s' in memory\x00a\x00Found cached directory listing for `%s'\x00Scanning directory `%s' for *.rem files\x00Caching directory `%s' listing\x00/*.rem\x00Reading command `%s': Found in cache\x00Executing `%s' for INCLUDECMD and caching as `%s'\x00/dev/null\x00Cannot execute `%s': %s\x00SECURITY: Won't read non-root-owned file or directory when running as root!\x00SECURITY: Won't read world-writable file or directory!\x00_\x00abs\x00access\x00adawn\x00adusk\x00ampm\x00ansicolor\x00args\x00asc\x00baseyr\x00catch\x00catcherr\x00char\x00choose\x00codepoint\x00coerce\x00columns\x00current\x00date\x00datepart\x00datetime\x00dawn\x00daysinmon\x00defined\x00dosubst\x00dusk\x00easterdate\x00escape\x00eval\x00evaltrig\x00filedate\x00filedatetime\x00filedir\x00getenv\x00hebdate\x00hebday\x00hebmon\x00hebyear\x00hex\x00htmlescape\x00htmlstriptags\x00iif\x00index\x00isany\x00isconst\x00isdst\x00isleap\x00isomitted\x00ivritmon\x00language\x00localtoutc\x00lower\x00max\x00mbchar\x00mbindex\x00mblower\x00mbpad\x00mbstrlen\x00mbsubstr\x00mbupper\x00min\x00minsfromutc\x00mon\x00monnum\x00moondate\x00moondatetime\x00moonphase\x00moonrise\x00moonrisedir\x00moonset\x00moonsetdir\x00moontime\x00multitrig\x00ndawn\x00ndusk\x00nonconst\x00nonomitted\x00ord\x00orthodoxeaster\x00ostype\x00pad\x00plural\x00psmoon\x00psshade\x00realcurrent\x00realnow\x00realtoday\x00rows\x00sgn\x00shell\x00shellescape\x00slide\x00soleq\x00stdout\x00strlen\x00substr\x00sunrise\x00sunset\x00timepart\x00timezone\x00trig\x00trigback\x00trigbase\x00trigcompletethrough\x00trigdelta\x00trigduration\x00trigeventduration\x00trigeventstart\x00trigeventstarttz\x00trigfrom\x00trigger\x00triginfo\x00trigistodo\x00trigmaxoverdue\x00trigpriority\x00trigrep\x00trigscanfrom\x00trigtags\x00trigtime\x00trigtimedelta\x00trigtimerep\x00trigtimetz\x00trigtz\x00triguntil\x00trigvalid\x00typeof\x00tzconvert\x00upper\x00utctolocal\x00value\x00version\x00weekno\x00wkday\x00wkdaynum\x00int\x00string\x00coerce(): Invalid type `%s'\x00coerce(): Cannot convert %s to %s\x00%X\x00AM\x00PM\x00%04d%c%02d%c%02d%c12%c%02d\x0012%c%02d\x00%04d%c%02d%c%02d%c%d%c%02d\x00%d%c%02d\x00ordx\x00ordx(%d)\x00%d%s\x00isconst(\x00isany(\x00, ?\x00catch(\x00, ?) => \x00*, \x00*) => \x00choose(\x00choose(): %s\x0006.03.02\x00UNIX\x00TTY\x00UNKNOWN\x00BLOCKDEV\x00CHARDEV\x00DIR\x00PIPE\x00SYMLINK\x00FILE\x00SOCKET\x00value(\x00?) => \x00Nonexistence of global variable `%s' makes value() non-constant\x00%d %s %d AT %02d:%02d\x00%d %s %d\x00iif(\x00.\x00INT\x00DATE\x00TIME\x00STRING\x00DATETIME\x00English\x00\\a\x00\\v\x00&lt;\x00&gt;\x00&amp;\x00%Z\x00TZ\x00UTC\x0003.01.02\x00psshade() is deprecated; use SPECIAL SHADE instead.\x00/_A LineWidth 2 div def \x00_A _A moveto \x00BoxWidth _A sub _A lineto BoxWidth _A sub BoxHeight _A sub lineto \x00_A BoxHeight _A sub lineto closepath %d 100 div setgray fill 0.0 setgray\x00_A BoxHeight _A sub lineto closepath %d 100 div %d 100 div %d 100 div setrgbcolor fill 0.0 setgray\x00psmoon() is deprecated; use SPECIAL MOON instead.\x00DaySize 2 div\x00EntrySize\x00gsave 0 setgray newpath Border %s add BoxHeight Border sub %s sub\x00 %s 0 360 arc closepath\x00 fill\x00 stroke\x00 newpath Border %s add BoxHeight Border sub %s sub\x00 %s 90 270 arc closepath fill\x00 %s 270 90 arc closepath fill\x00 Border %s add %s add Border add BoxHeight border sub %s sub %s sub moveto /EntryFont findfont %s scalefont setfont (%s) show\x00 grestore\x00Warning: SCANFROM is ignored in two-argument form of evaltrig()\x00Cannot use AT clause in multitrig() function\x00/dev/tty\x00\n# Built-in Functions\n\n\x00Ok\x00Missing ']'\x00Missing quote\x00Expression too complex\x00Invalid month name\x00Missing ')'\x00Undefined function\x00Illegal character\x00Invalid weekday name\x00Out of memory\x00Ill-formed number\x00Warning: PUSH-VARS without matching POP-VARS\x00POP-VARS without matching PUSH-VARS\x00Can't coerce\x00Type mismatch\x00Date overflow\x00POP-FUNCS without matching PUSH-FUNCS\x00Division by zero\x00Undefined variable\x00Unexpected end of line\x00Unexpected end of file\x00I/O error\x00Warning: PUSH-FUNCS without matching POP-FUNCS\x00Internal error\x00Bad date specification\x00Not enough arguments\x00Too many arguments\x00Ill-formed time\x00Number too high\x00Number too low\x00Can't open file\x00INCLUDE nested too deeply (max. 9)\x00Parse error\x00Can't compute trigger\x00Too many nested IFs\x00ELSE with no matching IF\x00ENDIF with no matching IF\x00Can't OMIT every weekday\x00Extraneous token(s) on line\x00POP-OMIT-CONTEXT without matching PUSH-OMIT-CONTEXT\x00RUN disabled\x00Domain error\x00Invalid identifier\x00Too many recursive function calls\x00Cannot modify system variable\x00C library function can't represent date/time\x00Attempt to redefine built-in function\x00Can't nest function definition in expression\x00Must fully specify date to use repeat factor\x00Year specified twice\x00Month specified twice\x00Day specified twice\x00Unknown token\x00Must specify month in OMIT command\x00TODO specified twice\x00Too many full OMITs (max. 1000)\x00Warning: PUSH-OMIT-CONTEXT without matching POP-OMIT-CONTEXT\x00Error reading input\x00Expecting end-of-line\x00Invalid Hebrew date\x00iif(): odd number of arguments required\x00Warning: Missing ENDIF\x00Expecting comma\x00Weekday specified twice\x00Only use one of BEFORE, AFTER or SKIP\x00Can't nest MSG, MSF, RUN, etc. in expression\x00Repeat value specified twice\x00Delta value specified twice\x00Back value specified twice\x00ONCE keyword used twice. (Hah.)\x00Expecting time after AT\x00THROUGH/UNTIL keyword used twice\x00Incomplete date specification\x00FROM/SCANFROM keyword used twice\x00Variable\x00Value\x00*UNDEFINED*\x00Entering UserFN\x00Leaving UserFN\x00Expired\x00fork() failed - can't do queued reminders\x00Illegal system date: Year is less than %d\x00Unknown debug flag '%c'\x00Unknown option '%c'\x00Unknown user '%s'\x00Could not change gid to %d\x00Could not change uid to %d\x00Out of memory for environment\x00Missing '=' sign\x00Missing variable name\x00Missing expression\x00COMPLETE-THROUGH specified twice\x00Remind: '-i' option: %s\x00No reminders.\x00%d reminder(s) queued for later today.\x00Expecting number\x00Undefined WARN function\x00Can't convert between time zones\x00No files matching *.rem\x00String too long\x00Time specified twice\x00Cannot specify DURATION without specifying AT\x00Expecting weekday name\x00Duplicate argument name\x00Expression evaluation is disabled\x00Time limit for expression evaluation exceeded\x00COMPLETE-THROUGH specified without TODO\x00MAX-OVERDUE specified twice\x00MAX-OVERDUE specified without TODO\x00TZ specified twice\x00TZ specified for non-timed reminder\x00Invalid multibyte sequence\x00Maximum expression complexity exceeded\x00Expecting operator or end-of-expression\x00Expecting constant, variable, function call or (expression)\x00Invalid value for system variable\x00Attempt to unset built-in function\x00Attempt to PUSH built-in function\x00INCLUDECMD produced too much output\x00Input line too long\x00Too many cached lines\x00January\x00February\x00March\x00April\x00May\x00June\x00July\x00August\x00September\x00October\x00November\x00December\x00\"')]}>\x00.?!\x00Ottawa\x00none\x00Monday\x00Tuesday\x00Wednesday\x00Thursday\x00Friday\x00Saturday\x00Sunday\x00/usr/local/share/remind\x00  Entries: %lu; Buckets: %lu; Non-empty Buckets: %lu\n\x00  Maxlen: %lu; Minlen: %lu; Avglen: %.3f; Stddev: %.3f; Avg nonempty len: %.3f\n\x00  Growths: %lu; Shrinks: %lu\n\x00Tishrey\x00Heshvan\x00Kislev\x00Tevet\x00Shvat\x00Adar A\x00Adar B\x00Nisan\x00Iyar\x00Sivan\x00Tamuz\x00Av\x00Elul\x00Adar\x00תשרי\x00חשוון\x00כסלו\x00טבת\x00שבט\x00אדר א'\x00אדר ב'\x00ניסן\x00אייר\x00סיון\x00תמוז\x00אב\x00אלול\x00אדר\x00Tishri\x00Tishrei\x00Cheshvan\x00Kheshvan\x00Shevat\x00Tammuz\x00Adar 1\x00Adar I\x00אדר א\x00אדר 1\x00אדר I\x00Adar 2\x00Adar II\x00אדר ב\x00אדר 2\x00אדר II\x00Iyyar\x00GetValidHebDate: Bad adarbehave value %d\x00GetValidHebDate: (1) software error! %d\x00GetValidHebDate: (2) software error! %d\x00GetValidHebDate: (3) software error! %d\x00No Adar A in %d\x00%d %s %d: %s\x00%s(%d): IF without ENDIF\x00Illegal date on command line\n\x00REMIND_FILE\x00DOTREMINDERS\x00HOME\x00HOME environment variable not set.  Unable to determine reminder file.\n\x00/.reminders\x00\nRemind should not be installed set-uid or set-gid.\nCHECK YOUR SYSTEM SECURITY.\n\x00Out of memory!\n\x00Reminders for %w, %d%s %m, %y%o:\x00rem\x00Invoked with a NULL argv[0]; bailing because that's just plain bizarre.\n\x00%s: -@n,m,b: n must be 0, 1 or 2 (assuming 0)\n\x00%s: -@n,m,b: m must be t, 0, 1 or 2 (assuming 2)\n\x00%s: -@n,m,b: b must be 0 or 1 (assuming 0)\n\x00weekly\x00%s: `-wt': Cannot open /dev/tty: %s\n\x00Could not evaluate command-line trigger: %s\n\x00%s: `%s'\n\x00\nREMIND %s Copyright (C) 1992-2026 Dianne Skoll\n\x00Usage: remind [options] filename [date] [time] [*rep]\n\x00Options:\n\x00 -n     Output next occurrence of reminders in simple format\n\x00 -r     Disable RUN directives\n\x00 -@[n,m,b] Colorize COLOR/SHADE reminders\n\x00 -c[a][n] Produce a calendar for n (default 1) months\n\x00 -c[a]+[n] Produce a calendar for n (default 1) weeks\n\x00 -w[n[,p[,s]]]  Specify width, padding and spacing of calendar\n\x00 -s[a][+][n] Produce `simple calendar' for n (1) months (weeks)\n\x00 -p[a][n] Same as -s, but input compatible with rem2ps\n\x00 -l     Prefix each simple calendar line with line number and filename comment\n\x00 -v     Verbose mode\n\x00 -o     Ignore ONCE directives\n\x00 -t[n]  Trigger all future (or those within `n' days)\n\x00 -h     `Hush' mode - be very quiet\n\x00 -a     Don't trigger timed reminders immediately - just queue them\n\x00 -q     Don't queue timed reminders\n\x00 -f     Trigger timed reminders by staying in foreground\n\x00 -z[n]  Enter daemon mode, waking every n (1) minutes.\n\x00 -d...  Debug: See man page for details\n\x00 -e     Divert messages normally sent to stderr to stdout\n\x00 -b[n]  Time format for cal: 0=am/pm, 1=24hr, 2=none\n\x00 -x[n]  Iteration limit for SATISFY clause (def=1000)\n\x00 -kcmd  Run `cmd' for MSG-type reminders\n\x00 -g[dddd] Sort reminders by date, time, priority, and 'timedness'\n\x00 -ivar=val Initialize var to val and preserve var\n\x00 -m     Start calendar with Monday rather than Sunday\n\x00 -y     Synthesize tags for tagless reminders\n\x00 -j[n]  Run in 'purge' mode.  [n = INCLUDE depth]\n\x00\nLong Options:\n\x00 --version                Print Remind version\n\x00 --hide-completed-todos   Don't show completed todos on calendar\n\x00 --only-todos             Only issue TODO reminders\n\x00 --only-events            Do not issue TODO reminders\n\x00 --json                   Use JSON output instead of plain-text\n\x00 --max-execution-time=n   Limit execution time to n seconds\n\x00 --max-expr-complexity=n  Limit expression evaluation to n nodes per line\n\x00 --print-config-cmd       Print ./configure cmd used to build Remind\n\x00 --print-errs             Print all possible error messages\n\x00 --print-tokens           Print all possible Remind tokens\n\x00 --no-fmt                 Do not format FMT-style reminders\n\x00 --file=filename          Use option to set file\n\x00\nRemind home page: %s\n\x00https://dianne.skoll.ca/projects/remind/\x00HOME=%s\x00SHELL=%s\x00USER=%s\x00LOGNAME=%s\x00-i option: %s: %s\n\x00Too many trusted users (%d max)\n\x00test\x00Enabling test mode: This is meant for the acceptance test.\nDo not use --test in production.\nIn test mode, the system time is fixed at 2025-01-06@19:00\n\x00no-fmt\x00only-todos\x00remind: Cannot combine --only-todos and --only-events\n\x00only-events\x00flush\x00json\x00print-config-cmd\x00./configure --prefix=/usr/local\x00print-errs\x00hide-completed-todos\x00print-tokens\x00max-expr-complexity=%lu\x00file=\x00%s: --file= can only be used once (ignoring second)\n\x00%s: file= requires an argument\n\x00max-execution-time=%d\x00%s: --max-execution-time must be non-negative\n\x00%s: Unknown long option --%s\n\x00\x1b]11;?\x1b\\\x00rgb:%x/%x/%x\x00===== S T A T I S T I C S =====\n\x00DynBuf Mallocs: %lu mallocs; %lu bytes\n\x00\nVariable hash table statistics:\n\x00\nFunction hash table statistics:\n\x00\nDedupe hash table statistics:\n\x00\nTranslation hash table statistics:\n\x00 Max expr node evals / line: %lu (%s:%d)\n\x00 Max expr node evals / line: %lu\n\x00      Total expr node evals: %lu\n\x00\n\nmax-execution-time exceeded.\n\n\x00{\"noreminders\":\"\x00}\n\x00]\n\x00%s: `%s': %s.\n\x00#!P\x00#!P! Could not parse next line: %s\n\x00%s(%d): \x00%s(%d:%d): \x00       \x00/etc/localtime\x00#!P: The next IF evaluated false...\x00#!P: REM statements in IF block not checked for purging.\x00#!P: The previous IF evaluated true.\x00#!P: REM statements in ELSE block not checked for purging\x00#!P: The next IFTRIG did not trigger.\x00#!P: REM statements in IFTRIG block not checked for purging.\x0005.02.03\x00ON\x00OFF\x00INVALID_WKDAY\x00INVALID_MON\x00Warning: Unable to save ONCE timestamp to %s: %s\x00%d\n# This is a timestamp file used by Remind to track ONCE reminders.\n# Do not edit or delete it.\n\x00i\x00span\x00??? Software error!  No done scratchpad in MarkupToAnsi\x00\x1b[3m\x00\x1b[9m\x00\x1b[4m\x00Unclosed formatting tags\x00color = \"#%2x%2x%2x\" %n\x00fgcolor = \"#%2x%2x%2x\" %n\x00foreground = \"#%2x%2x%2x\" %n\x00bgcolor = \"#%2x%2x%2x\" %n\x00background = \"#%2x%2x%2x\" %n\x00Unknown attribute in <span> tag at %s\x00Markup tags and attribute names should be all lower-case\x00Tag is missing closing >\x00Unclosed quote in tag <%s>\x00span \x00Unsupported formatting tag <%s>\x00</%s> tag without any opening tag\x00<%s> tag closed by </%s>\x00\x1b]8;;\x00\x1b\\\x00Unmatched PUSH-OMIT-CONTEXT at %s(%d)\x00POP-OMIT-CONTEXT at %s:%d matches PUSH-OMIT-CONTEXT in different file: %s:%d\x00%s('%04d-%02d-%02d')\x00OMIT: UNTIL not allowed; did you mean THROUGH?\x00%s: `%s' (OMIT)\x0004.02.09\x00You have OMITted everything!  The space-time continuum is at risk.\x00Error: THROUGH date earlier than start date\x00Global Full OMITs (%d of maximum allowed %d):\n\x00\tNone.\n\x00\t%04d%c%02d%c%02d\n\x00Global Partial OMITs (%d of maximum allowed %d):\n\x00\t%02d%c%02d\n\x00Global Weekday OMITs:\n\x00\t%s\n\x00{\x00response\x00queued\x00nqueued\x00\"command\":\"STATUS\"}\n\x00NOTE queued %d\n\x00{\"response\":\"reread\",\"command\":\"SIGHUP\"}\n\x00NOTE SIGHUP\nNOTE reread\n\x00Cannot stat %s - not running as daemon!\x00{\"response\":\"reminder\",\x00qid\x00ttime\x00tdatetime\x00NOTE reminder %s\x00*\n\x00\"}\n\x00NOTE endreminder\n\x00Contents of AT queue:%s\x00Trigger: %02d%c%02d  Activate: %02d%c%02d  Rep: %d  Delta: %d  Sched: %s\x00(%d)\x00SPECIAL\x00Text: %s %s%s%s%s%s\x00To terminate program, send SIGQUIT (probably Ctrl-\\ on the keyboard.)%s\x00SCHED: Considering %04d%c%02d%c%02d%c%02d%c%02d\n\x00{\"response\":\"queue\",\"queue\":\x00[\x00rundisabled\x00ntrig\x00type\x00NO_TYPE\x00MSG_TYPE\x00RUN_TYPE\x00CAL_TYPE\x00SAT_TYPE\x00PS_TYPE\x00PSF_TYPE\x00MSF_TYPE\x00PASSTHRU_TYPE\x00body\x00\"}\x00]\x00,\"command\":\"QUEUE\"}\n\x00{\"response\":\"newdate\"}\n{\"response\":\"reread\",\"command\":\"newdate\"}\n\x00NOTE newdate\nNOTE reread\n\x00{\"response\":\"reread\",\"command\":\"inotify\"}\n\x00EXIT\n\x00STATUS\n\x00QUEUE\n\x00NOTE queue\n\x00 RunDisabled=%d ntrig=%d ttime=%02d:%02d nexttime=%02d:%02d delta=%d rep=%d duration=%d \x00NULL\x00%s %s %s\n\x00NOTE endqueue\n\x00JSONQUEUE\n\x00NOTE JSONQUEUE\n\x00NOTE ENDJSONQUEUE\n\x00TRANSLATE \x00translate\x00\"translation\":{\"\x00\"},\x00\"command\":\"TRANSLATE\"}\n\x00TRANSLATE_DUMP\n\x00NOTE TRANSLATE_DUMP\n\x00translate_dump\x00\"table\":\x00\nNOTE ENDTRANSLATE_DUMP\n\x00,\"command\":\"TRANSLATE_DUMP\"}\n\x00REREAD\n\x00{\"response\":\"reread\",\"command\":\"REREAD\"}\n\x00NOTE reread\n\x00DEL \x00DEL %d\x00{\"response\":\"error\",\"error\":\"Unknown command\",\"command\":\"\x00ERR Invalid daemon command: %s\x00sortbanner\x00sortbanner('%04d/%02d/%02d')\x00after\x00april\x00august\x00banner\x00before\x00cal\x00clear-omit-context\x00complete-through\x00completed-through\x00debug\x00december\x00do\x00dumpvars\x00else\x00endif\x00errmsg\x00exit\x00expr\x00february\x00first\x00fmt\x00fourth\x00frename\x00friday\x00fset\x00funset\x00if\x00iftrig\x00in\x00include\x00includecmd\x00info\x00january\x00july\x00june\x00last\x00lastday\x00lastworkday\x00march\x00max-overdue\x00may\x00maybe-uncomputable\x00monday\x00msf\x00msg\x00november\x00october\x00omit\x00pop-funcs\x00pop-omit-context\x00pop-vars\x00preserve\x00ps\x00psfile\x00push-funcs\x00push-omit-context\x00push-vars\x00return\x00run\x00satisfy\x00saturday\x00second\x00september\x00set\x00special\x00sunday\x00sysinclude\x00tag\x00third\x00through\x00thursday\x00todo\x00tuesday\x00unset\x00wednesday\x00%.*s\n\x00# Remind Tokens\n\n\x00\n# Month Names\n\n\x00\n# Weekdays\n\n\x00LANGID\x00 \"\"\n\x00# Translation table template\n\n\x00TRANSLATE \"LANGID\" \x00\n\n\x00BANNER %s\n\x00\n# Weekday Names\n\x00SET $%s \x00\n# Month Names\n\x00\n# Other Translation-related System Variables\n\x00\n# Error Messages\n\x00\n# Other Messages\n\x00[\"[\"]\x00# Translation table\n\x00:\x00Unable to initialize translation hash table: Out of memory.  Exiting.\n\x00en\x00Invalid translation: Both original and translated must have the same printf-style formatting sequences in the same order.\x00dump\x00clear\x00generate\x00#0- +'I%123456789.hlqLjzZt\x00NextSimpleTrig %s %d\x00%s(%s): Trig(adj) = %s, %d %s, %d\x00%s(%s): %s\n\x00%s(%s): Trig = %s, %d %s, %d\x00%s(%s): %s: %04d-%02d-%02d\n\x00Invalid INFO string: Must be of the form \"Header: Value\"\x00Duplicate INFO headers are not permitted\x00Potential function definition considered non-constant because of context\x00[cmdline]\x00Function `%s' redefined: previously defined at %s(%s)\x00Function definition considered non-constant because of context\x0003.00.04\x00Warning: Function name `%s...' truncated to `%s'\x0006.02.06\x00POP-FUNCS at %s:%d matches PUSH-FUNCS in different file: %s:%d\x00Unmatched PUSH-FUNCS at %s(%d)\x00/usr/share/zoneinfo\x00dup\x00In\x00Called from\x00    \x00%s(%s): [#%d] %s function `%s'\x00\n    [\x00remaining call frames omitted\x00%d:%d\x0006.01.05\x00No time zone file found for TZ `%s'... is it valid?\x00Unable to initialize variable hash table: Out of memory.  Exiting.\n\x00C\x00Accepting \"%s\" for $Latitude/$Longitude, but you should use the \"C\" locale decimal separator \".\" instead\x00%s is deprecated; use %s instead\x00$LatDeg\x00$Latitude\x00$LatMin\x00$LatSec\x00$LongDeg\x00$Longitude\x00$LongMin\x00$LongSec\x00%.8f\x00Not setting $OnceFile: Already processed a reminder with a ONCE clause\x00@\x00`%s' UNSET without being used (previous SET: %s:%d)\x00`%s' re-SET without being used (previous SET: %s:%d)\x00Potential variable assignment considered non-constant because of context\x00Do not use [] around expression in SET command\x00Variable assignment considered non-constant because of context\x00Warning: Variable name `%.*s...' truncated to `%.*s'\x00-c\x00%s  %s\n\n\x00%s  %s\n\x00%s  \x00 <preserved>\x00 <const>\x00The following variables were set, but not subsequently used:\x00\t%s - %s %s:%d\n\x00defined at\x00AddBlankLines\x00Ago\x00Am\x00And\x00At\x00CalcUTC\x00CalMode\x00CalType\x00Daemon\x00DateSep\x00DateTimeSep\x00DedupeReminders\x00DefaultColor\x00DefaultColour\x00DefaultDelta\x00DefaultPrio\x00DefaultTDelta\x00DeltaOverride\x00DontFork\x00DontQueue\x00DontTrigAts\x00EndSent\x00EndSentIg\x00ExpressionTimeLimit\x00FirstIndent\x00FoldYear\x00FormWidth\x00Fromnow\x00HideCompletedTodos\x00Hour\x00Hplu\x00HushMode\x00IgnoreOnce\x00InfDelta\x00IntMax\x00IntMin\x00Is\x00JSONMode\x00LatDeg\x00Latitude\x00LatMin\x00LatSec\x00Location\x00LongDeg\x00Longitude\x00LongMin\x00LongSec\x00MaxCachedLines\x00MaxFullOmits\x00MaxIncludeCmdLines\x00MaxLateMinutes\x00MaxLineLength\x00MaxPartialOmits\x00MaxSatIter\x00MaxStringLen\x00MinsFromUTC\x00Minute\x00Mplu\x00NextMode\x00Now\x00NumFullOmits\x00NumPartialOmits\x00NumQueued\x00NumTrig\x00On\x00OnceFile\x00ParseUntriggered\x00Pm\x00PrefixLineNo\x00PSCal\x00Repeat\x00RunOff\x00Shaded\x00SimpleCal\x00SortByDate\x00SortByPrio\x00SortByTime\x00SubsIndent\x00SuppressImplicitWarnings\x00SuppressLRM\x00SysInclude\x00Tb\x00TerminalBackground\x00TerminalHyperlinks\x00TimeSep\x00TimetIs64bit\x00Today\x00TodoFilter\x00Tomorrow\x00Tt\x00Tu\x00U\x00Ud\x00Um\x00UntimedFirst\x00Use256Colors\x00UseBGVTColors\x00UseTrueColors\x00UseVTColors\x00Uw\x00Uy\x00WarningLevel\x00Was\x00Unmatched PUSH-VARS at %s(%d)\x00%s: `$%s'\x00POP-VARS at %s:%d matches PUSH-VARS in different file: %s:%d\x00(Security note: $RunOff variable tested.)\x00$%s: Name too long\n\x00%25s  \x00%d\n\x00Error: %s\n\x00%-10d  \x00[%d, \x00Inf)\n\x00%d]\n\x00\n# System Variables\n\n\x00$%s\n\x00"

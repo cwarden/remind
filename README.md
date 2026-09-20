@@ -63,6 +63,12 @@ the external program named by `remind_command` in `~/.urdrc`.
   slightly later than in C.
 - `--max-execution-time=n` stops the program after exactly n seconds; the C
   watchdog polls once per second and stops it between n and n+2 seconds.
+- A file that contains a reminder with a `TZ` clause no longer changes the
+  time that later reminders see. In Remind 06.03.02 through 06.03.04,
+  processing such a reminder sets the internal current time to the time the
+  program started, so `%1`, `now()` and `current()` in a reminder triggered
+  from the queue use the start time instead of the trigger time. The patch
+  restores the previous value of the internal current time instead.
 - When `TZ` is unset, remind checks `/etc/localtime` each time it reads the
   clock and loads the zone again if the file was replaced (for example by
   `dpkg-reconfigure tzdata`). glibc does this inside `localtime()`;
@@ -121,6 +127,7 @@ involved.
 | --- | --- |
 | `01-ccgo-hooks.patch` | Changes under `#ifdef __CCGO__`: `popen`, `pclose`, `exit` and `atexit` are routed to Go implementations, `sigaction` is replaced by `signal`, the three `fork` sites (background reminders, server-mode RUN commands, and the `--max-execution-time` watchdog) call Go hooks, and `files.c` gains a function that discards the parsed-file cache. The hooks are implemented in the `libshim` package, which ccgo links with `-lshim`. |
 | `02-reload-replaced-localtime.patch` | The `/etc/localtime` check in `main.c` described under Differences from the C build, under `#ifdef __CCGO__`. |
+| `03-restore-systime-after-tz-clause.patch` | The `TZ` clause fix in `dorem.c` described under Differences from the C build. It is not under `#ifdef __CCGO__`; the C build has the same bug. |
 
 To write a new patch:
 

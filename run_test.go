@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRunReadsStdin(t *testing.T) {
@@ -92,5 +93,34 @@ func TestRunLeavesProcessStreamsAlone(t *testing.T) {
 	after := [3]uintptr{os.Stdin.Fd(), os.Stdout.Fd(), os.Stderr.Fd()}
 	if before != after {
 		t.Errorf("process descriptors changed from %v to %v", before, after)
+	}
+}
+
+// A reminder with a TZ clause used to leave remind's SysTime variable set to
+// the time the program started, so %1 in a reminder triggered from the queue
+// gave the interval between the start of the program and the trigger time.
+func TestQueuedReminderAfterTZReminderUsesCurrentTime(t *testing.T) {
+	if testing.Short() {
+		t.Skip("waits up to a minute for a queued reminder")
+	}
+	// Other tests leave TZ=UTC in the C environment, so use UTC here as well
+	// instead of depending on test order.
+	cSetenv(t, "TZ", "UTC")
+	now := time.Now().UTC()
+	at := now.Add(time.Minute)
+	if at.Day() != now.Day() {
+		t.Skip("the next minute is tomorrow")
+	}
+	body := "REM 1 Jan 2030 AT 09:00 TZ America/Los_Angeles MSG other-zone\n" +
+		"REM AT " + at.Format("15:04") + " MSG queued: %1\n"
+	res, err := Run([]string{"-a", "-"}, []byte(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.ExitCode != 0 {
+		t.Errorf("exit status %d, want 0; stderr: %s", res.ExitCode, res.Stderr)
+	}
+	if !strings.Contains(string(res.Stdout), "queued: now") {
+		t.Errorf("stdout %q does not contain %q", res.Stdout, "queued: now")
 	}
 }
