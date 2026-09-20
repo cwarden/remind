@@ -7,8 +7,9 @@
 // Command generator transpiles the Remind C sources to Go with ccgo/v4.
 //
 // It extracts the upstream release tarball into a work directory, applies
-// internal/patches/ccgo-hooks.patch, runs ./configure, generates src/xlat.c,
-// and links the remind program into a single Go file, ccgo_<goos>_<goarch>.go.
+// internal/patches/*.patch in file name order, runs ./configure, generates
+// src/xlat.c, and links the remind program into a single Go file,
+// ccgo_<goos>_<goarch>.go.
 //
 // Environment:
 //
@@ -42,7 +43,7 @@ import (
 const (
 	version     = "06.03.02"
 	archivePath = "remind-" + version + ".tar.gz"
-	patchPath   = "internal/patches/ccgo-hooks.patch"
+	patchGlob   = "internal/patches/*.patch"
 	modulePath  = "github.com/cwarden/remind/v6"
 	// sysDir is the compiled-in $SysInclude directory, the same value
 	// ./configure --prefix=/usr/local gives the C build.
@@ -97,7 +98,12 @@ func main() {
 	}
 
 	repoRoot := util.MustAbsCwd(true)
-	absPatch := filepath.Join(repoRoot, patchPath)
+	// filepath.Glob returns the names sorted, which is the order the patches
+	// apply in.
+	patches, err := filepath.Glob(filepath.Join(repoRoot, patchGlob))
+	if err != nil || len(patches) == 0 {
+		fail(1, "no patches match %s: %v", patchGlob, err)
+	}
 	extracted := "remind-" + version
 	tempDir := os.Getenv("GO_GENERATE_DIR")
 	dev := os.Getenv("GO_GENERATE_DEV") != ""
@@ -127,7 +133,9 @@ func main() {
 	fmt.Fprintf(os.Stderr, "tempDir %s\n", tempDir)
 	fmt.Fprintf(os.Stderr, "libRoot %s\n", libRoot)
 	util.MustShell(true, nil, "tar", "xzf", archivePath, "-C", tempDir)
-	util.MustShell(true, nil, "patch", "-p1", "-d", libRoot, "-i", absPatch)
+	for _, p := range patches {
+		util.MustShell(true, nil, "patch", "-p1", "-d", libRoot, "-i", p)
+	}
 	util.MustCopyFile(false, "LICENSE-REMIND", filepath.Join(libRoot, "COPYRIGHT"), nil)
 	result := "remind.go"
 	util.MustInDir(true, libRoot, func() (err error) {

@@ -2,7 +2,7 @@
 # Use of this source code is governed by the GNU General Public License,
 # Version 2, which can be found in the LICENSE file.
 
-.PHONY:	all build clean dev download editor generate generate-all lint patch test work
+.PHONY:	all build clean dev download editor generate generate-all lint patch test unpack work
 
 # Keep the exit status of pipelines such as `go run generator.go | tee`.
 SHELL = /bin/bash
@@ -12,9 +12,8 @@ DIR = /tmp/remindgo
 VERSION = 06.03.02
 TAR = remind-$(VERSION).tar.gz
 URL = https://dianne.skoll.ca/projects/remind/download/$(TAR)
-# Checkout of https://salsa.debian.org/dskoll/remind.git whose go-port branch
-# carries the __CCGO__ hook edits.
-REMIND_SRC = ../remind
+# Where `make unpack` puts the patched sources for writing a new patch.
+SRC_DIR = $(DIR)-src
 
 all: editor
 
@@ -39,10 +38,31 @@ editor:
 download:
 	@if [ ! -f $(TAR) ]; then wget $(URL) ; fi
 
-# Export the __CCGO__ hook edits from the remind checkout as a patch that
-# applies to the release tarball.
+# Unpack the release tarball into $(SRC_DIR) as a git repository and apply
+# internal/patches/*.patch in file name order, one commit per patch. Edit the
+# sources there, then run `make patch NAME=NN-short-description`.
+unpack: download
+	rm -rf $(SRC_DIR)
+	mkdir -p $(SRC_DIR)
+	tar xzf $(TAR) -C $(SRC_DIR) --strip-components=1
+	git -C $(SRC_DIR) init -q
+	git -C $(SRC_DIR) add -A
+	git -C $(SRC_DIR) commit -q -m "remind $(VERSION)"
+	for p in internal/patches/*.patch; do \
+		git -C $(SRC_DIR) apply --index $(CURDIR)/$$p || exit 1; \
+		git -C $(SRC_DIR) commit -q -m "$$(basename $$p)" || exit 1; \
+	done
+
+# Write the uncommitted edits in $(SRC_DIR) to internal/patches/$(NAME).patch
+# and commit them there, so that the next patch starts from this one. A
+# patch written this way applies after every existing patch, so give it the
+# highest number.
 patch:
-	git -C $(REMIND_SRC) diff --src-prefix=a/ --dst-prefix=b/ $$(git -C $(REMIND_SRC) merge-base go-port $(VERSION))...go-port -- src > internal/patches/ccgo-hooks.patch
+	@if [ -z "$(NAME)" ]; then echo "usage: make patch NAME=NN-short-description"; exit 1; fi
+	@if [ -e internal/patches/$(NAME).patch ]; then echo "internal/patches/$(NAME).patch exists"; exit 1; fi
+	git -C $(SRC_DIR) diff --src-prefix=a/ --dst-prefix=b/ HEAD -- src > internal/patches/$(NAME).patch
+	@if [ ! -s internal/patches/$(NAME).patch ]; then rm internal/patches/$(NAME).patch; echo "no edits under $(SRC_DIR)/src"; exit 1; fi
+	git -C $(SRC_DIR) commit -q -a -m "$(NAME).patch"
 
 generate: download
 	mkdir -p $(DIR) || true

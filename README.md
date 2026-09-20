@@ -78,7 +78,8 @@ The generated files `ccgo_<goos>_<goarch>.go` and, derived from each,
 `reset_<goos>_<goarch>.go` (the function that gives every global its
 initial value before a run) are produced from the release tarball by
 `generator.go`. Regenerating needs a C compiler (for `./configure`),
-`make`, `sh`, `patch`, `tar`, `wget` and `gofmt`:
+`make`, `sh`, `patch`, `tar`, `wget` and `gofmt` (and `git` for `make unpack`
+and `make patch`):
 
 ```
 make download        # fetch remind-06.03.02.tar.gz
@@ -102,18 +103,30 @@ Environment variables honoured by the generator:
 Two runs of the generator on the same inputs produce files that differ only
 in the order of the string literal table (and therefore in the offsets that
 refer to it); ccgo assigns those offsets in map iteration order. Regenerate
-and commit only when the sources, the patch, the ccgo flags, or the pinned
+and commit only when the sources, the patches, the ccgo flags, or the pinned
 ccgo and libc versions change.
 
-The C sources get small changes under `#ifdef __CCGO__`, kept in
-`internal/patches/ccgo-hooks.patch`: `popen`, `pclose`, `exit` and `atexit`
-are routed to Go implementations, `sigaction` is replaced by `signal`, the
-three `fork` sites (background reminders, server-mode RUN commands, and the
-`--max-execution-time` watchdog) call Go hooks, and `files.c` gains a
-function that discards the parsed-file cache. The hooks are implemented in
-the `libshim` package, which ccgo links with `-lshim`. The patch is authored
-on the `go-port` branch of a Remind checkout next to this repository and
-exported with `make patch`.
+The generator applies the patches in `internal/patches` to the unpacked
+tarball in file name order. Nothing else is needed; no Remind checkout is
+involved.
+
+| Patch | Contents |
+| --- | --- |
+| `01-ccgo-hooks.patch` | Changes under `#ifdef __CCGO__`: `popen`, `pclose`, `exit` and `atexit` are routed to Go implementations, `sigaction` is replaced by `signal`, the three `fork` sites (background reminders, server-mode RUN commands, and the `--max-execution-time` watchdog) call Go hooks, and `files.c` gains a function that discards the parsed-file cache. The hooks are implemented in the `libshim` package, which ccgo links with `-lshim`. |
+
+To write a new patch:
+
+```
+make unpack                          # tarball plus patches in /tmp/remindgo-src, a git repository
+$EDITOR /tmp/remindgo-src/src/...
+make patch NAME=NN-short-description # writes internal/patches/NN-short-description.patch
+make generate-all
+```
+
+`make unpack` commits the tarball and then each patch, so `make patch` writes
+only the edits made since. A patch written this way applies after every
+existing patch, so give it the highest number. To change an existing patch,
+edit the patch file by hand, or put the correction in a new patch.
 
 ## Testing
 
