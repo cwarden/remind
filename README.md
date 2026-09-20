@@ -63,6 +63,13 @@ the external program named by `remind_command` in `~/.urdrc`.
   slightly later than in C.
 - `--max-execution-time=n` stops the program after exactly n seconds; the C
   watchdog polls once per second and stops it between n and n+2 seconds.
+- When `TZ` is unset, remind checks `/etc/localtime` each time it reads the
+  clock and loads the zone again if the file was replaced (for example by
+  `dpkg-reconfigure tzdata`). glibc does this inside `localtime()`;
+  modernc.org/libc does not. As in C, reminders already in the queue keep
+  the trigger times computed when the file was read, so a reminder with a
+  `TZ` clause triggers at the old local time until remind reads the file
+  again (at midnight, on SIGHUP, or when the file changes).
 
 The system include directory (`$SysInclude`, used by `INCLUDE [...]`) is
 `/usr/local/share/remind`. Override it with the `REMIND_SYSDIR` environment
@@ -113,6 +120,7 @@ involved.
 | Patch | Contents |
 | --- | --- |
 | `01-ccgo-hooks.patch` | Changes under `#ifdef __CCGO__`: `popen`, `pclose`, `exit` and `atexit` are routed to Go implementations, `sigaction` is replaced by `signal`, the three `fork` sites (background reminders, server-mode RUN commands, and the `--max-execution-time` watchdog) call Go hooks, and `files.c` gains a function that discards the parsed-file cache. The hooks are implemented in the `libshim` package, which ccgo links with `-lshim`. |
+| `02-reload-replaced-localtime.patch` | The `/etc/localtime` check in `main.c` described under Differences from the C build, under `#ifdef __CCGO__`. |
 
 To write a new patch:
 

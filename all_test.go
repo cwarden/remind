@@ -151,6 +151,63 @@ func TestTimezones(t *testing.T) {
 	runSuite(t, "tests/test-timezone-support")
 }
 
+// TestReplacedLocaltimeIsNoticed replaces the file /etc/localtime refers to
+// while remind is running, in a private mount namespace, and requires now()
+// to move from UTC to Asia/Tokyo. glibc reads a replaced /etc/localtime
+// again on its own; modernc.org/libc needs the check added to main.c.
+func TestReplacedLocaltimeIsNoticed(t *testing.T) {
+	tr := requireTree(t)
+	const zoneinfo = "/usr/share/zoneinfo/"
+	probe := `mount --bind ` + zoneinfo + `UTC "$(readlink -f /etc/localtime)"`
+	if out, err := exec.Command("unshare", "-rm", "sh", "-c", probe).CombinedOutput(); err != nil {
+		t.Skipf("cannot bind mount in a user namespace: %v: %s", err, out)
+	}
+	if _, err := os.Stat(zoneinfo + "Asia/Tokyo"); err != nil {
+		t.Skip("zoneinfo not installed")
+	}
+	dir := t.TempDir()
+	rem := "MSG before [now()]\n" +
+		"SET a shell(\"touch started; while [ ! -e replaced ]; do sleep 0.1; done\")\n" +
+		"MSG after [now()]\n"
+	if err := os.WriteFile(filepath.Join(dir, "zone.rem"), []byte(rem), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	script := `set -e
+target=$(readlink -f /etc/localtime)
+mount --bind ` + zoneinfo + `UTC "$target"
+"$REMIND" zone.rem > out &
+while [ ! -e started ]; do sleep 0.1; done
+mount --bind ` + zoneinfo + `Asia/Tokyo "$target"
+touch replaced
+wait
+`
+	cmd := inDir(dir, "unshare", "-rm", "sh", "-c", script)
+	for _, kv := range os.Environ() {
+		if !strings.HasPrefix(kv, "TZ=") {
+			cmd.Env = append(cmd.Env, kv)
+		}
+	}
+	cmd.Env = append(cmd.Env, "REMIND="+tr.goRemind)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	out, err := os.ReadFile(filepath.Join(dir, "out"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var before, after [2]int
+	for _, line := range strings.Split(string(out), "\n") {
+		fmt.Sscanf(line, "before %d:%d", &before[0], &before[1])
+		fmt.Sscanf(line, "after %d:%d", &after[0], &after[1])
+	}
+	// Asia/Tokyo is 9 hours ahead of UTC all year. Allow for the minute
+	// changing between the two calls of now().
+	diff := ((after[0]*60 + after[1]) - (before[0]*60 + before[1]) + 1440) % 1440
+	if diff < 540 || diff > 541 {
+		t.Errorf("now() moved by %d minutes, want 540; output:\n%s", diff, out)
+	}
+}
+
 // TestUrdInvocations runs remind the way urd (github.com/cwarden/urd) does
 // and requires the Go and C binaries to produce identical output.
 func TestUrdInvocations(t *testing.T) {

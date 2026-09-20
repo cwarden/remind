@@ -1,0 +1,69 @@
+diff --git a/src/main.c b/src/main.c
+index 8fd1fd8..c075eb5 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -1194,6 +1194,44 @@ int SystemDateTime(int realtime)
+     }
+ }
+ 
++#ifdef __CCGO__
++#include <sys/stat.h>
++/***************************************************************/
++/*                                                             */
++/*  ReloadChangedLocaltime                                     */
++/*                                                             */
++/*  glibc's localtime() reads /etc/localtime again when the    */
++/*  file has been replaced.  modernc.org/libc reads it again   */
++/*  only when the value of TZ changes, so a program that is    */
++/*  waiting for queued reminders keeps the old time zone.      */
++/*  If TZ is unset and /etc/localtime is a different file      */
++/*  from the one seen by the previous call, set TZ, call       */
++/*  tzset(), unset TZ and call tzset() again.  The first call  */
++/*  always does that, because an in-process run starts with    */
++/*  whatever zone the previous run loaded.                     */
++/*                                                             */
++/***************************************************************/
++static void ReloadChangedLocaltime(void)
++{
++    static int have_stat = 0;
++    static struct stat prev;
++    struct stat sb;
++
++    if (getenv("TZ")) return;
++    if (stat("/etc/localtime", &sb) != 0) return;
++    if (have_stat &&
++        sb.st_dev == prev.st_dev &&
++        sb.st_ino == prev.st_ino &&
++        sb.st_mtime == prev.st_mtime) {
++        return;
++    }
++    have_stat = 1;
++    prev = sb;
++    (void) tz_set_tz("UTC");
++    (void) tz_set_tz(NULL);
++}
++#endif
++
+ /***************************************************************/
+ /*                                                             */
+ /*  SystemTime                                                 */
+@@ -1214,6 +1252,9 @@ int SystemTime(int realtime)
+     }
+ 
+     now = time(NULL);
++#ifdef __CCGO__
++    ReloadChangedLocaltime();
++#endif
+     t = localtime(&now);
+     return t->tm_hour * 3600L + t->tm_min * 60L +
+         t->tm_sec;
+@@ -1255,6 +1296,9 @@ int SystemDate(int *y, int *m, int *d)
+     }
+ 
+     now = time(NULL);
++#ifdef __CCGO__
++    ReloadChangedLocaltime();
++#endif
+     t = localtime(&now);
+ 
+     if (d) *d = t->tm_mday;
