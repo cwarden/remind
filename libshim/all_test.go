@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"testing"
@@ -148,6 +149,105 @@ func TestSystemDevnullRedirectsStdoutToStderr(t *testing.T) {
 	})
 	if stderr != "leaked\n" {
 		t.Errorf("stderr got %q, want %q", stderr, "leaked\n")
+	}
+}
+
+func TestPopenGivesCommandDevNullStdin(t *testing.T) {
+	if _, err := os.Stat("/proc/self/fd/0"); err != nil {
+		t.Skip("no /proc")
+	}
+	tls := newTLS(t)
+	fp := Xrem_popen(tls, cString(t, tls, "readlink /proc/self/fd/0"), cString(t, tls, "r"))
+	if fp == 0 {
+		t.Fatalf("popen failed, errno %d", errno(tls))
+	}
+	if got, want := readAll(tls, fp), "/dev/null\n"; got != want {
+		t.Errorf("command stdin %q, want %q", got, want)
+	}
+	Xrem_pclose(tls, fp)
+}
+
+// cFile opens a file in the test's temporary directory as a C stream for
+// writing and returns the stream and the file's path.
+func cFile(t *testing.T, tls *libc.TLS, name string) (uintptr, string) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), name)
+	fp := libc.Xfopen(tls, cString(t, tls, path), cString(t, tls, "w"))
+	if fp == 0 {
+		t.Fatalf("fopen %s failed, errno %d", path, errno(tls))
+	}
+	return fp, path
+}
+
+func readFile(t *testing.T, path string) string {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}
+
+func TestSystemWritesToTheGivenStreams(t *testing.T) {
+	tls := newTLS(t)
+	out, outPath := cFile(t, tls, "out")
+	errf, errPath := cFile(t, tls, "err")
+	// Buffered output written before the command must come before the
+	// command's output.
+	libc.Xfputs(tls, cString(t, tls, "before\n"), out)
+	cmd := cString(t, tls, "echo out; echo err >&2")
+	var status int32
+	stdout := captureFile(t, &os.Stdout, func() {
+		status = Xrem_system(tls, cmd, out, errf)
+	})
+	libc.Xfclose(tls, out)
+	libc.Xfclose(tls, errf)
+	if status != 0 {
+		t.Errorf("system returned %d, want 0", status)
+	}
+	if got, want := readFile(t, outPath), "before\nout\n"; got != want {
+		t.Errorf("out stream got %q, want %q", got, want)
+	}
+	if got, want := readFile(t, errPath), "err\n"; got != want {
+		t.Errorf("err stream got %q, want %q", got, want)
+	}
+	if stdout != "" {
+		t.Errorf("process stdout got %q, want nothing", stdout)
+	}
+}
+
+func TestSystemGivesCommandDevNullStdin(t *testing.T) {
+	if _, err := os.Stat("/proc/self/fd/0"); err != nil {
+		t.Skip("no /proc")
+	}
+	tls := newTLS(t)
+	out, outPath := cFile(t, tls, "out")
+	Xrem_system(tls, cString(t, tls, "readlink /proc/self/fd/0"), out, out)
+	libc.Xfclose(tls, out)
+	if got, want := readFile(t, outPath), "/dev/null\n"; got != want {
+		t.Errorf("command stdin %q, want %q", got, want)
+	}
+}
+
+func TestSystemReturnsWaitStatus(t *testing.T) {
+	tls := newTLS(t)
+	out, _ := cFile(t, tls, "out")
+	defer libc.Xfclose(tls, out)
+	status := Xrem_system(tls, cString(t, tls, "exit 3"), out, out)
+	if got := syscall.WaitStatus(status).ExitStatus(); got != 3 {
+		t.Errorf("exit status %d (wait status %d), want 3", got, status)
+	}
+}
+
+func TestInProcessFollowsTheExitHook(t *testing.T) {
+	tls := newTLS(t)
+	if got := Xrem_in_process(tls); got != 0 {
+		t.Errorf("in_process %d without an exit hook, want 0", got)
+	}
+	SetExitHook(func(int32) {})
+	defer SetExitHook(nil)
+	if got := Xrem_in_process(tls); got != 1 {
+		t.Errorf("in_process %d with an exit hook, want 1", got)
 	}
 }
 

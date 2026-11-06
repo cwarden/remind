@@ -62,9 +62,15 @@ func errnoOf(err error) int32 {
 	return libc.EAGAIN
 }
 
-// Xrem_popen runs cmd with /bin/sh -c and returns a FILE* open for reading
-// the command's standard output. Only mode "r" is supported; Remind never
-// opens a command for writing. On failure it returns NULL with errno set.
+// Xrem_popen runs cmd with /bin/sh -c and standard input from /dev/null,
+// and returns a FILE* open for reading the command's standard output. Only
+// mode "r" is supported; Remind never opens a command for writing. On
+// failure it returns NULL with errno set.
+//
+// The C sources put /dev/null on descriptor 0 around popen() so that the
+// command does not read the terminal. The __CCGO__ build leaves descriptor
+// 0 alone, because it belongs to the host program during an in-process run,
+// and gives the command /dev/null here instead.
 func Xrem_popen(tls *libc.TLS, cmd, mode uintptr) uintptr {
 	if libc.GoString(mode) != "r" {
 		setErrno(tls, libc.EINVAL)
@@ -82,7 +88,6 @@ func Xrem_popen(tls *libc.TLS, cmd, mode uintptr) uintptr {
 
 	w := os.NewFile(uintptr(fds[1]), "pipe")
 	c := exec.Command("/bin/sh", "-c", libc.GoString(cmd))
-	c.Stdin = os.Stdin
 	c.Stdout = w
 	c.Stderr = os.Stderr
 	err := c.Start()
@@ -121,11 +126,16 @@ func Xrem_pclose(tls *libc.TLS, fp uintptr) int32 {
 	}
 
 	libc.Xfclose(tls, fp)
-	err := c.Wait()
+	return waitStatus(c.Wait())
+}
+
+// waitStatus converts the result of exec.Cmd.Wait or Run to a wait status
+// as returned by pclose() and system(): 0 on success, the raw wait status
+// when the command exited with an error, and -1 when it could not be run.
+func waitStatus(err error) int32 {
 	if err == nil {
 		return 0
 	}
-
 	var ee *exec.ExitError
 	if errors.As(err, &ee) {
 		if ws, ok := ee.Sys().(syscall.WaitStatus); ok {
@@ -133,6 +143,59 @@ func Xrem_pclose(tls *libc.TLS, fp uintptr) int32 {
 		}
 	}
 	return -1
+}
+
+// streamFile flushes the C stream fp and returns an *os.File on a
+// close-on-exec duplicate of its descriptor. The duplicate keeps the
+// *os.File, whose Close and finalizer close its descriptor, from closing the
+// descriptor fp still uses.
+func streamFile(tls *libc.TLS, fp uintptr) (*os.File, error) {
+	libc.Xfflush(tls, fp)
+	syscall.ForkLock.RLock()
+	fd, err := syscall.Dup(int(libc.Xfileno(tls, fp)))
+	if err == nil {
+		syscall.CloseOnExec(fd)
+	}
+	syscall.ForkLock.RUnlock()
+	if err != nil {
+		return nil, err
+	}
+	return os.NewFile(uintptr(fd), "stream"), nil
+}
+
+// Xrem_system implements system() for the __CCGO__ build. It runs cmd with
+// /bin/sh -c, standard input from /dev/null, standard output to the C
+// stream out and standard error to the C stream errf, waits for it, and
+// returns its wait status, or -1 with errno set when it cannot be started.
+//
+// The C sources put /dev/null on descriptor 0, and for JSON mode standard
+// error on descriptor 1, around system(). The __CCGO__ build leaves both
+// descriptors alone, because they belong to the host program during an
+// in-process run, and passes the streams instead. During an in-process run
+// the streams are the ones Run captures, so the command's output is
+// captured with the rest of remind's.
+func Xrem_system(tls *libc.TLS, cmd, out, errf uintptr) int32 {
+	stdout, err := streamFile(tls, out)
+	if err != nil {
+		setErrno(tls, errnoOf(err))
+		return -1
+	}
+	defer stdout.Close()
+	stderr, err := streamFile(tls, errf)
+	if err != nil {
+		setErrno(tls, errnoOf(err))
+		return -1
+	}
+	defer stderr.Close()
+
+	c := exec.Command("/bin/sh", "-c", libc.GoString(cmd))
+	c.Stdout = stdout
+	c.Stderr = stderr
+	if err := c.Start(); err != nil {
+		setErrno(tls, errnoOf(err))
+		return -1
+	}
+	return waitStatus(c.Wait())
 }
 
 // Xrem_system_devnull runs cmd with /bin/sh -c, standard input from
@@ -224,6 +287,18 @@ func Xrem_signal(tls *libc.TLS, sig int32, handler uintptr) uintptr {
 		return libc.SIG_DFL
 	}
 	return libc.Xsignal(tls, sig, handler)
+}
+
+// Xrem_in_process reports whether remind is running inside another Go
+// program through an in-process run (an exit hook is set). Remind uses it to
+// leave descriptors 0, 1 and 2 open when it handles queued reminders.
+func Xrem_in_process(tls *libc.TLS) int32 {
+	mu.Lock()
+	defer mu.Unlock()
+	if exitHook != nil {
+		return 1
+	}
+	return 0
 }
 
 // Xrem_exit implements exit() for the __CCGO__ build. Without an exit hook

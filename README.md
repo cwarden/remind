@@ -37,7 +37,11 @@ because remind is not reentrant, and each run starts from the state of a
 fresh process: every global of the generated code is reset, files cached by
 the previous run are read again, and `exit()` and `atexit` handlers work as
 they would in a separate process. Output is captured inside the C library,
-so the calling program's own standard streams are unaffected.
+so the calling program's own standard streams are unaffected. Commands run
+by `shell()`, `INCLUDECMD` and `RUN` get `/dev/null` as their standard input
+without remind changing descriptor 0, and the output of `RUN` commands is
+captured with the rest of remind's. The standard error of `shell()` and
+`INCLUDECMD` commands goes to the calling process's standard error.
 
 Limits: a run that queues timed reminders (no `-q`) waits for them in the
 calling process; `--max-execution-time` ends the whole process when it
@@ -57,6 +61,12 @@ the external program named by `remind_command` in `~/.urdrc`.
 - Timed reminders that would run in a background process are handled in the
   foreground, as with `-f`. Run `remind file &` to get the shell back.
 - Interactive input from a terminal has no line editing (no GNU Readline).
+- Commands run by `shell()`, `INCLUDECMD` and `RUN` get `/dev/null` as their
+  standard input from the Go code that starts them. The C build puts
+  `/dev/null` on descriptor 0 while the command runs, and in JSON mode puts
+  standard error on descriptor 1, which inside another program would replace
+  that program's own terminal descriptors. During an in-process run, queued
+  reminders also leave descriptors 0, 1 and 2 open.
 - `-u user` changes the user and group id but does not call `initgroups`.
 - Signals are delivered when a transpiled function returns, so the
   `$ExpressionTimeLimit` alarm and SIGINT/SIGHUP in `-z` mode take effect

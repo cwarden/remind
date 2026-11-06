@@ -16230,7 +16230,7 @@ const m_O_NOCTTY = 0400
 const m_O_NOFOLLOW = 0100000
 const m_O_NONBLOCK = 04000
 const m_O_PATH = 010000000
-const m_O_RDONLY = 0
+const m_O_RDONLY = 00
 const m_O_RDWR = 02
 const m_O_RSYNC = 04010000
 const m_O_SEARCH = "O_PATH"
@@ -17535,10 +17535,10 @@ func _SetupGlobChain(tls *libc.TLS, dirname uintptr, i uintptr) (r1 int32) {
 func _IncludeCmd(tls *libc.TLS, cmd uintptr) (r1 int32) {
 	bp := tls.Alloc(80)
 	defer tls.Free(80)
-	var devnull, old_flag, r, stdin_dup int32
+	var old_flag, r, stdin_dup int32
 	var fname, fp2, h, i, v1 uintptr
 	var _ /* buf at bp+0 */ TDynamicBuffer
-	_, _, _, _, _, _, _, _, _ = devnull, fname, fp2, h, i, old_flag, r, stdin_dup, v1
+	_, _, _, _, _, _, _, _ = fname, fp2, h, i, old_flag, r, stdin_dup, v1
 	_got_a_fresh_line(tls)
 	Xclear_callstack(tls)
 	if _IStackPtr >= int32(m_INCLUDE_NEST) {
@@ -17606,20 +17606,11 @@ func _IncludeCmd(tls *libc.TLS, cmd uintptr) (r1 int32) {
 		libc.Xfprintf(tls, XErrFp, __ccgo_ts+538, 0)
 	}
 	/* Not found in cache */
-	/* Connect stdin to /dev/null */
-	stdin_dup = libc.Xdup(tls, m_STDIN_FILENO)
-	if stdin_dup >= 0 {
-		devnull = libc.Xopen(tls, __ccgo_ts+6442, m_O_RDONLY, 0)
-		if devnull >= 0 {
-			if libc.Xdup2(tls, devnull, m_STDIN_FILENO) >= 0 {
-				Xset_cloexec(tls, stdin_dup)
-			} else {
-				libc.Xclose(tls, stdin_dup)
-				stdin_dup = -int32(1)
-			}
-			libc.Xclose(tls, devnull)
-		}
-	}
+	/* rem_popen gives the command /dev/null as its standard input.
+	   Descriptor 0 belongs to the host program when remind runs inside
+	   another Go program, so leave it alone. */
+	stdin_dup = -int32(1)
+
 	/* If cmd starts with !, then disable RUN within the cmd output */
 	if libc.Int32FromUint8(**(**uint8)(__ccgo_up(cmd))) == int32('!') {
 		fp2 = libshim.Xrem_popen(tls, cmd+libc.UintptrFromInt32(1), __ccgo_ts+1678)
@@ -17632,7 +17623,7 @@ func _IncludeCmd(tls *libc.TLS, cmd uintptr) (r1 int32) {
 		} else {
 			v1 = cmd
 		}
-		XEprint(tls, Xtr(tls, __ccgo_ts+6452), libc.VaList(bp+64, v1, libc.Xstrerror(tls, **(**int32)(__ccgo_up(libc.X__errno_location(tls))))))
+		XEprint(tls, Xtr(tls, __ccgo_ts+6442), libc.VaList(bp+64, v1, libc.Xstrerror(tls, **(**int32)(__ccgo_up(libc.X__errno_location(tls))))))
 		_PopFile(tls)
 		XDBufFree(tls, bp)
 		if stdin_dup >= 0 {
@@ -17916,7 +17907,7 @@ func _CheckSafetyAux(tls *libc.TLS, statbuf uintptr) (r int32) {
 	if !(libc.Xgeteuid(tls) != 0) {
 		/* Reject files not owned by root or group/world writable */
 		if (*Tstat)(unsafe.Pointer(statbuf)).Fst_uid != uint32(0) {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+720, libc.VaList(bp+8, Xtr(tls, __ccgo_ts+6476)))
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+720, libc.VaList(bp+8, Xtr(tls, __ccgo_ts+6466)))
 			return 0
 		}
 	}
@@ -17926,7 +17917,7 @@ func _CheckSafetyAux(tls *libc.TLS, statbuf uintptr) (r int32) {
 		return int32(1)
 	}
 	if (*Tstat)(unsafe.Pointer(statbuf)).Fst_mode&uint32(m_S_IWOTH) != 0 {
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+720, libc.VaList(bp+8, Xtr(tls, __ccgo_ts+6552)))
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+720, libc.VaList(bp+8, Xtr(tls, __ccgo_ts+6542)))
 		return 0
 	}
 	/* If file is not owned by me or a trusted user, disable RUN command */
@@ -17987,6 +17978,7 @@ const m_M_PI_2 = 1.57079632679489661923
 const m_M_PI_4 = 0.78539816339744830962
 const m_M_SQRT1_2 = 0.70710678118654752440
 const m_M_SQRT2 = 1.41421356237309504880
+const m_O_RDONLY1 = 0
 const m_PI = 3.141592653589793
 const m_PI_BY_180 = 0.017453292519943295
 const m_RUN_CB3 = 32
@@ -18514,22 +18506,22 @@ func _FCoerce(tls *libc.TLS, info uintptr) (r1 int32) {
 	(*Tfunc_info)(unsafe.Pointer(info)).Fretval = **(**TValue)(__ccgo_up((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 1*24))
 	(**(**TValue)(__ccgo_up((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 1*24))).Ftype1 = m_ERR_TYPE4
 	*(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 1*24 + 16)) = libc.Int32FromInt32(0)
-	if !(libc.Xstrcasecmp(tls, s, __ccgo_ts+7730) != 0) {
+	if !(libc.Xstrcasecmp(tls, s, __ccgo_ts+7720) != 0) {
 		r = XDoCoerce(tls, uint8(m_INT_TYPE3), info+16)
 	} else {
-		if !(libc.Xstrcasecmp(tls, s, __ccgo_ts+6723) != 0) {
+		if !(libc.Xstrcasecmp(tls, s, __ccgo_ts+6713) != 0) {
 			r = XDoCoerce(tls, uint8(m_DATE_TYPE3), info+16)
 		} else {
 			if !(libc.Xstrcasecmp(tls, s, __ccgo_ts+1269) != 0) {
 				r = XDoCoerce(tls, uint8(m_TIME_TYPE5), info+16)
 			} else {
-				if !(libc.Xstrcasecmp(tls, s, __ccgo_ts+7734) != 0) {
+				if !(libc.Xstrcasecmp(tls, s, __ccgo_ts+7724) != 0) {
 					r = XDoCoerce(tls, uint8(m_STR_TYPE4), info+16)
 				} else {
-					if !(libc.Xstrcasecmp(tls, s, __ccgo_ts+6737) != 0) {
+					if !(libc.Xstrcasecmp(tls, s, __ccgo_ts+6727) != 0) {
 						r = XDoCoerce(tls, libc.Uint8FromInt32(libc.Int32FromInt32(m_TIME_TYPE5)|libc.Int32FromInt32(m_DATE_TYPE3)), info+16)
 					} else {
-						XEprint(tls, __ccgo_ts+7741, libc.VaList(bp+8, s))
+						XEprint(tls, __ccgo_ts+7731, libc.VaList(bp+8, s))
 						return int32(m_E_CANT_COERCE)
 					}
 				}
@@ -18537,7 +18529,7 @@ func _FCoerce(tls *libc.TLS, info uintptr) (r1 int32) {
 		}
 	}
 	if r != 0 {
-		XEprint(tls, __ccgo_ts+7769, libc.VaList(bp+8, v, s))
+		XEprint(tls, __ccgo_ts+7759, libc.VaList(bp+8, v, s))
 	}
 	return r
 }
@@ -18670,7 +18662,7 @@ func _FHex(tls *libc.TLS, info uintptr) (r int32) {
 	if (**(**TValue)(__ccgo_up((*Tfunc_info)(unsafe.Pointer(info)).Fargs))).Ftype1 != int32(m_INT_TYPE3) {
 		return int32(m_E_BAD_TYPE)
 	}
-	libc.X__builtin_snprintf(tls, bp, uint64(64), __ccgo_ts+7803, libc.VaList(bp+72, libc.Uint32FromInt32(*(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 16)))))
+	libc.X__builtin_snprintf(tls, bp, uint64(64), __ccgo_ts+7793, libc.VaList(bp+72, libc.Uint32FromInt32(*(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 16)))))
 	return _RetStrVal(tls, bp, info)
 }
 
@@ -19310,8 +19302,8 @@ func _FAmpm(tls *libc.TLS, info uintptr) (r int32) {
 	**(**int32)(__ccgo_up(bp)) = 0
 	**(**int32)(__ccgo_up(bp + 4)) = 0
 	**(**int32)(__ccgo_up(bp + 8)) = 0
-	am = __ccgo_ts + 7806
-	pm = __ccgo_ts + 7809
+	am = __ccgo_ts + 7796
+	pm = __ccgo_ts + 7799
 	ampm = libc.UintptrFromInt32(0)
 	include_leading_zero = 0
 	if (**(**TValue)(__ccgo_up((*Tfunc_info)(unsafe.Pointer(info)).Fargs))).Ftype1 != libc.Int32FromInt32(m_TIME_TYPE5)|libc.Int32FromInt32(m_DATE_TYPE3) && (**(**TValue)(__ccgo_up((*Tfunc_info)(unsafe.Pointer(info)).Fargs))).Ftype1 != int32(m_TIME_TYPE5) {
@@ -19359,22 +19351,22 @@ func _FAmpm(tls *libc.TLS, info uintptr) (r int32) {
 		/* AM */
 		if h == 0 {
 			if (**(**TValue)(__ccgo_up((*Tfunc_info)(unsafe.Pointer(info)).Fargs))).Ftype1 == libc.Int32FromInt32(m_TIME_TYPE5)|libc.Int32FromInt32(m_DATE_TYPE3) {
-				libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+7812, libc.VaList(bp+152, **(**int32)(__ccgo_up(bp)), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 4))+int32(1), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 8)), libc.Int32FromUint8(XDateTimeSep), libc.Int32FromUint8(XTimeSep), m))
+				libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+7802, libc.VaList(bp+152, **(**int32)(__ccgo_up(bp)), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 4))+int32(1), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 8)), libc.Int32FromUint8(XDateTimeSep), libc.Int32FromUint8(XTimeSep), m))
 			} else {
-				libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+7839, libc.VaList(bp+152, libc.Int32FromUint8(XTimeSep), m))
+				libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+7829, libc.VaList(bp+152, libc.Int32FromUint8(XTimeSep), m))
 			}
 		} else {
 			if (**(**TValue)(__ccgo_up((*Tfunc_info)(unsafe.Pointer(info)).Fargs))).Ftype1 == libc.Int32FromInt32(m_TIME_TYPE5)|libc.Int32FromInt32(m_DATE_TYPE3) {
 				if include_leading_zero != 0 {
 					libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+5737, libc.VaList(bp+152, **(**int32)(__ccgo_up(bp)), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 4))+int32(1), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 8)), libc.Int32FromUint8(XDateTimeSep), h, libc.Int32FromUint8(XTimeSep), m))
 				} else {
-					libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+7848, libc.VaList(bp+152, **(**int32)(__ccgo_up(bp)), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 4))+int32(1), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 8)), libc.Int32FromUint8(XDateTimeSep), h, libc.Int32FromUint8(XTimeSep), m))
+					libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+7838, libc.VaList(bp+152, **(**int32)(__ccgo_up(bp)), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 4))+int32(1), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 8)), libc.Int32FromUint8(XDateTimeSep), h, libc.Int32FromUint8(XTimeSep), m))
 				}
 			} else {
 				if include_leading_zero != 0 {
 					libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+4745, libc.VaList(bp+152, h, libc.Int32FromUint8(XTimeSep), m))
 				} else {
-					libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+7875, libc.VaList(bp+152, h, libc.Int32FromUint8(XTimeSep), m))
+					libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+7865, libc.VaList(bp+152, h, libc.Int32FromUint8(XTimeSep), m))
 				}
 			}
 		}
@@ -19387,13 +19379,13 @@ func _FAmpm(tls *libc.TLS, info uintptr) (r int32) {
 			if include_leading_zero != 0 {
 				libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+5737, libc.VaList(bp+152, **(**int32)(__ccgo_up(bp)), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 4))+int32(1), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 8)), libc.Int32FromUint8(XDateTimeSep), h, libc.Int32FromUint8(XTimeSep), m))
 			} else {
-				libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+7848, libc.VaList(bp+152, **(**int32)(__ccgo_up(bp)), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 4))+int32(1), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 8)), libc.Int32FromUint8(XDateTimeSep), h, libc.Int32FromUint8(XTimeSep), m))
+				libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+7838, libc.VaList(bp+152, **(**int32)(__ccgo_up(bp)), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 4))+int32(1), libc.Int32FromUint8(XDateSep), **(**int32)(__ccgo_up(bp + 8)), libc.Int32FromUint8(XDateTimeSep), h, libc.Int32FromUint8(XTimeSep), m))
 			}
 		} else {
 			if include_leading_zero != 0 {
 				libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+4745, libc.VaList(bp+152, h, libc.Int32FromUint8(XTimeSep), m))
 			} else {
-				libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+7875, libc.VaList(bp+152, h, libc.Int32FromUint8(XTimeSep), m))
+				libc.X__builtin_snprintf(tls, bp+12, uint64(128), __ccgo_ts+7865, libc.VaList(bp+152, h, libc.Int32FromUint8(XTimeSep), m))
 			}
 		}
 		ampm = pm
@@ -19433,10 +19425,10 @@ func _FOrd(tls *libc.TLS, info uintptr) (r int32) {
 	if (**(**TValue)(__ccgo_up((*Tfunc_info)(unsafe.Pointer(info)).Fargs))).Ftype1 != int32(m_INT_TYPE3) {
 		return int32(m_E_BAD_TYPE)
 	}
-	if !(_in_ford != 0) && XUserFuncExists(tls, __ccgo_ts+7884) == int32(1) {
+	if !(_in_ford != 0) && XUserFuncExists(tls, __ccgo_ts+7874) == int32(1) {
 		**(**uintptr)(__ccgo_up(bp + 40)) = bp
 		(**(**TValue)(__ccgo_up(bp + 48))).Ftype1 = m_ERR_TYPE4
-		libc.X__builtin_snprintf(tls, bp, uint64(32), __ccgo_ts+7889, libc.VaList(bp+88, *(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 16))))
+		libc.X__builtin_snprintf(tls, bp, uint64(32), __ccgo_ts+7879, libc.VaList(bp+88, *(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 16))))
 		n = Xparse_expression(tls, bp+40, bp+32, libc.UintptrFromInt32(0), 0)
 		if **(**int32)(__ccgo_up(bp + 32)) != m_OK {
 			return **(**int32)(__ccgo_up(bp + 32))
@@ -19485,7 +19477,7 @@ func _FOrd(tls *libc.TLS, info uintptr) (r int32) {
 	if u == int32(3) && t != int32(13) {
 		s = __ccgo_ts + 4248
 	}
-	libc.X__builtin_snprintf(tls, bp, uint64(32), __ccgo_ts+7898, libc.VaList(bp+88, v, s))
+	libc.X__builtin_snprintf(tls, bp, uint64(32), __ccgo_ts+7888, libc.VaList(bp+88, v, s))
 	return _RetStrVal(tls, bp, info)
 }
 
@@ -19850,7 +19842,7 @@ func _FIsconst(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, noncons
 		XDBufInit(tls, bp+32)
 	}
 	if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
-		XDBufPuts(tls, bp+32, __ccgo_ts+7903)
+		XDBufPuts(tls, bp+32, __ccgo_ts+7893)
 	}
 	**(**int32)(__ccgo_up(bp + 24)) = 0
 	r = Xevaluate_expr_node(tls, (*Texpr_node)(unsafe.Pointer(node)).Fchild, locals, bp, bp+24)
@@ -19908,7 +19900,7 @@ func _FIsAny(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst 
 		XDBufInit(tls, bp)
 	}
 	if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
-		XDBufPuts(tls, bp, __ccgo_ts+7912)
+		XDBufPuts(tls, bp, __ccgo_ts+7902)
 	}
 	cur = (*Texpr_node)(unsafe.Pointer(node)).Fchild
 	r = Xevaluate_expr_node(tls, cur, locals, bp+56, nonconst)
@@ -19984,7 +19976,7 @@ func _FIsAny(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst 
 	if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
 		for (*Texpr_node)(unsafe.Pointer(cur)).Fsibling != 0 {
 			cur = (*Texpr_node)(unsafe.Pointer(cur)).Fsibling
-			XDBufPuts(tls, bp, __ccgo_ts+7919)
+			XDBufPuts(tls, bp, __ccgo_ts+7909)
 		}
 		XDBufPuts(tls, bp, __ccgo_ts+5179)
 		XDBufPuts(tls, bp, XPrintValue(tls, ans, libc.UintptrFromInt32(0)))
@@ -20015,7 +20007,7 @@ func _FCatch(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst 
 		XDBufInit(tls, bp)
 	}
 	if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
-		XDBufPuts(tls, bp, __ccgo_ts+7923)
+		XDBufPuts(tls, bp, __ccgo_ts+7913)
 	}
 	cur = (*Texpr_node)(unsafe.Pointer(node)).Fchild
 	old_suppress = XSuppressErrorOutputInCatch
@@ -20025,7 +20017,7 @@ func _FCatch(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst 
 	if r == m_OK {
 		if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
 			XDBufPuts(tls, bp, XPrintValue(tls, ans, libc.UintptrFromInt32(0)))
-			XDBufPuts(tls, bp, __ccgo_ts+7930)
+			XDBufPuts(tls, bp, __ccgo_ts+7920)
 			XDBufPuts(tls, bp, XPrintValue(tls, ans, libc.UintptrFromInt32(0)))
 			libc.Xfprintf(tls, XErrFp, __ccgo_ts+720, libc.VaList(bp+64, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer))
 			XDBufFree(tls, bp)
@@ -20037,7 +20029,7 @@ func _FCatch(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst 
 	if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
 		XDBufPuts(tls, bp, __ccgo_ts+5535)
 		XDBufPuts(tls, bp, XGetErr(tls, r))
-		XDBufPuts(tls, bp, __ccgo_ts+7939)
+		XDBufPuts(tls, bp, __ccgo_ts+7929)
 	}
 	r = Xevaluate_expr_node(tls, (*Texpr_node)(unsafe.Pointer(cur)).Fsibling, locals, ans, nonconst)
 	if r == m_OK {
@@ -20053,7 +20045,7 @@ func _FCatch(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst 
 	if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
 		XDBufPuts(tls, bp, __ccgo_ts+5535)
 		XDBufPuts(tls, bp, XGetErr(tls, r))
-		XDBufPuts(tls, bp, __ccgo_ts+7943)
+		XDBufPuts(tls, bp, __ccgo_ts+7933)
 		XDBufPuts(tls, bp, XGetErr(tls, r))
 		libc.Xfprintf(tls, XErrFp, __ccgo_ts+720, libc.VaList(bp+64, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer))
 		XDBufFree(tls, bp)
@@ -20097,7 +20089,7 @@ func _FChoose(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst
 		XDBufInit(tls, bp)
 	}
 	if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
-		XDBufPuts(tls, bp, __ccgo_ts+7950)
+		XDBufPuts(tls, bp, __ccgo_ts+7940)
 	}
 	cur = (*Texpr_node)(unsafe.Pointer(node)).Fchild
 	r = Xevaluate_expr_node(tls, cur, locals, bp+56, nonconst)
@@ -20114,7 +20106,7 @@ func _FChoose(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst
 		if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
 			cur = (*Texpr_node)(unsafe.Pointer(cur)).Fsibling
 			for cur != 0 {
-				XDBufPuts(tls, bp, __ccgo_ts+7919)
+				XDBufPuts(tls, bp, __ccgo_ts+7909)
 				cur = (*Texpr_node)(unsafe.Pointer(cur)).Fsibling
 			}
 			XDBufPuts(tls, bp, __ccgo_ts+5179)
@@ -20127,7 +20119,7 @@ func _FChoose(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst
 			*(*uintptr)(unsafe.Pointer(bp + 56 + 16)) = libc.UintptrFromInt32(0)
 		}
 		(**(**TValue)(__ccgo_up(bp + 56))).Ftype1 = m_ERR_TYPE4
-		XEprint(tls, __ccgo_ts+7958, libc.VaList(bp+88, XGetErr(tls, int32(m_E_BAD_TYPE))))
+		XEprint(tls, __ccgo_ts+7948, libc.VaList(bp+88, XGetErr(tls, int32(m_E_BAD_TYPE))))
 		return int32(m_E_BAD_TYPE)
 	}
 	n = *(*int32)(unsafe.Pointer(bp + 56 + 16))
@@ -20146,7 +20138,7 @@ func _FChoose(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst
 		cur = (*Texpr_node)(unsafe.Pointer(cur)).Fsibling
 		if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
 			if n != 0 {
-				XDBufPuts(tls, bp, __ccgo_ts+7919)
+				XDBufPuts(tls, bp, __ccgo_ts+7909)
 			}
 		}
 		if !(cur != 0) {
@@ -20165,7 +20157,7 @@ func _FChoose(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst
 		XDBufPuts(tls, bp, XPrintValue(tls, ans, libc.UintptrFromInt32(0)))
 		cur = (*Texpr_node)(unsafe.Pointer(cur)).Fsibling
 		for cur != 0 {
-			XDBufPuts(tls, bp, __ccgo_ts+7919)
+			XDBufPuts(tls, bp, __ccgo_ts+7909)
 			cur = (*Texpr_node)(unsafe.Pointer(cur)).Fsibling
 		}
 		XDBufPuts(tls, bp, __ccgo_ts+5179)
@@ -20184,7 +20176,7 @@ func _FChoose(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst
 //	/*                                                             */
 //	/***************************************************************/
 func _FVersion(tls *libc.TLS, info uintptr) (r int32) {
-	return _RetStrVal(tls, __ccgo_ts+7971, info)
+	return _RetStrVal(tls, __ccgo_ts+7961, info)
 }
 
 // C documentation
@@ -20196,7 +20188,7 @@ func _FVersion(tls *libc.TLS, info uintptr) (r int32) {
 //	/*                                                             */
 //	/***************************************************************/
 func _FOstype(tls *libc.TLS, info uintptr) (r int32) {
-	return _RetStrVal(tls, __ccgo_ts+7980, info)
+	return _RetStrVal(tls, __ccgo_ts+7970, info)
 }
 
 // C documentation
@@ -20293,28 +20285,28 @@ func _FStdout(tls *libc.TLS, info uintptr) (r1 int32) {
 	var _ /* statbuf at bp+0 */ Tstat
 	_ = r
 	if libc.Xisatty(tls, int32(m_STDOUT_FILENO)) != 0 {
-		return _RetStrVal(tls, __ccgo_ts+7985, info)
+		return _RetStrVal(tls, __ccgo_ts+7975, info)
 	}
 	if libc.Xfstat(tls, int32(m_STDOUT_FILENO), bp) < 0 {
-		return _RetStrVal(tls, __ccgo_ts+7989, info)
+		return _RetStrVal(tls, __ccgo_ts+7979, info)
 	}
 	switch (**(**Tstat)(__ccgo_up(bp))).Fst_mode & libc.Uint32FromInt32(m_S_IFMT) {
 	case uint32(m_S_IFBLK1):
-		r = _RetStrVal(tls, __ccgo_ts+7997, info)
+		r = _RetStrVal(tls, __ccgo_ts+7987, info)
 	case uint32(m_S_IFCHR1):
-		r = _RetStrVal(tls, __ccgo_ts+8006, info)
+		r = _RetStrVal(tls, __ccgo_ts+7996, info)
 	case uint32(m_S_IFDIR):
-		r = _RetStrVal(tls, __ccgo_ts+8014, info)
+		r = _RetStrVal(tls, __ccgo_ts+8004, info)
 	case uint32(m_S_IFIFO1):
-		r = _RetStrVal(tls, __ccgo_ts+8018, info)
+		r = _RetStrVal(tls, __ccgo_ts+8008, info)
 	case uint32(m_S_IFLNK1):
-		r = _RetStrVal(tls, __ccgo_ts+8023, info)
+		r = _RetStrVal(tls, __ccgo_ts+8013, info)
 	case uint32(m_S_IFREG):
-		r = _RetStrVal(tls, __ccgo_ts+8031, info)
+		r = _RetStrVal(tls, __ccgo_ts+8021, info)
 	case uint32(m_S_IFSOCK1):
-		r = _RetStrVal(tls, __ccgo_ts+8036, info)
+		r = _RetStrVal(tls, __ccgo_ts+8026, info)
 	default:
-		r = _RetStrVal(tls, __ccgo_ts+7989, info)
+		r = _RetStrVal(tls, __ccgo_ts+7979, info)
 		break
 	}
 	return r
@@ -20410,7 +20402,7 @@ func _FValue(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst 
 		return r
 	}
 	if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
-		XDBufPuts(tls, bp, __ccgo_ts+8043)
+		XDBufPuts(tls, bp, __ccgo_ts+8033)
 	}
 	if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
 		XDBufPuts(tls, bp, XPrintValue(tls, bp+56, libc.UintptrFromInt32(0)))
@@ -20427,7 +20419,7 @@ func _FValue(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst 
 	if (**(**TValue)(__ccgo_up(bp + 56))).Ftype1 != int32(m_STR_TYPE4) {
 		if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
 			if (*Texpr_node)(unsafe.Pointer(node)).Fnum_kids == int32(2) {
-				XDBufPuts(tls, bp, __ccgo_ts+8050)
+				XDBufPuts(tls, bp, __ccgo_ts+8040)
 			}
 			XDBufPuts(tls, bp, XGetErr(tls, int32(m_E_BAD_TYPE)))
 			libc.Xfprintf(tls, XErrFp, __ccgo_ts+720, libc.VaList(bp+88, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer))
@@ -20462,7 +20454,7 @@ func _FValue(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst 
 		(**(**TValue)(__ccgo_up(bp + 56))).Ftype1 = m_ERR_TYPE4
 		if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
 			if (*Texpr_node)(unsafe.Pointer(node)).Fnum_kids == int32(2) {
-				XDBufPuts(tls, bp, __ccgo_ts+8050)
+				XDBufPuts(tls, bp, __ccgo_ts+8040)
 			}
 			if r != m_OK {
 				XDBufPuts(tls, bp, XGetErr(tls, r))
@@ -20478,7 +20470,7 @@ func _FValue(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst 
 	   as non-constant because the nonexistence of a variable may depend
 	   on today's date (for example) */
 	if XDebugFlag&int32(m_DB_NONCONST5) != 0 && !(**(**int32)(__ccgo_up(nonconst)) != 0) {
-		XWprint(tls, Xtr(tls, __ccgo_ts+8057), libc.VaList(bp+88, *(*uintptr)(unsafe.Pointer(bp + 56 + 16))))
+		XWprint(tls, Xtr(tls, __ccgo_ts+8047), libc.VaList(bp+88, *(*uintptr)(unsafe.Pointer(bp + 56 + 16))))
 	}
 	if (**(**TValue)(__ccgo_up(bp + 56))).Ftype1 == int32(m_STR_TYPE4) && *(*uintptr)(unsafe.Pointer(bp + 56 + 16)) != 0 {
 		libc.Xfree(tls, *(*uintptr)(unsafe.Pointer(bp + 56 + 16)))
@@ -20956,9 +20948,9 @@ func _FTrigger(tls *libc.TLS, info uintptr) (r int32) {
 	}
 	XFromDSE(tls, **(**int32)(__ccgo_up(bp + 12)), bp, bp+4, bp+8)
 	if **(**int32)(__ccgo_up(bp + 16)) != int32(m_INT_MAX2) {
-		libc.X__builtin_snprintf(tls, bp+20, uint64(128), __ccgo_ts+8121, libc.VaList(bp+160, **(**int32)(__ccgo_up(bp + 8)), XMonthName[**(**int32)(__ccgo_up(bp + 4))], **(**int32)(__ccgo_up(bp)), **(**int32)(__ccgo_up(bp + 16))/int32(60), **(**int32)(__ccgo_up(bp + 16))%int32(60)))
+		libc.X__builtin_snprintf(tls, bp+20, uint64(128), __ccgo_ts+8111, libc.VaList(bp+160, **(**int32)(__ccgo_up(bp + 8)), XMonthName[**(**int32)(__ccgo_up(bp + 4))], **(**int32)(__ccgo_up(bp)), **(**int32)(__ccgo_up(bp + 16))/int32(60), **(**int32)(__ccgo_up(bp + 16))%int32(60)))
 	} else {
-		libc.X__builtin_snprintf(tls, bp+20, uint64(128), __ccgo_ts+8143, libc.VaList(bp+160, **(**int32)(__ccgo_up(bp + 8)), XMonthName[**(**int32)(__ccgo_up(bp + 4))], **(**int32)(__ccgo_up(bp))))
+		libc.X__builtin_snprintf(tls, bp+20, uint64(128), __ccgo_ts+8133, libc.VaList(bp+160, **(**int32)(__ccgo_up(bp + 8)), XMonthName[**(**int32)(__ccgo_up(bp + 4))], **(**int32)(__ccgo_up(bp))))
 	}
 	return _RetStrVal(tls, bp+20, info)
 }
@@ -20977,11 +20969,11 @@ func _FTrigger(tls *libc.TLS, info uintptr) (r int32) {
 func _FShell(tls *libc.TLS, info uintptr) (r1 int32) {
 	bp := tls.Alloc(64)
 	defer tls.Free(64)
-	var ch, devnull, maxlen, r, stdin_dup, v1, v2 int32
+	var ch, maxlen, r, stdin_dup, v1, v2 int32
 	var fp, v6 uintptr
 	var v5 Tsize_t
 	var _ /* buf at bp+0 */ TDynamicBuffer
-	_, _, _, _, _, _, _, _, _, _ = ch, devnull, fp, maxlen, r, stdin_dup, v1, v2, v5, v6
+	_, _, _, _, _, _, _, _, _ = ch, fp, maxlen, r, stdin_dup, v1, v2, v5, v6
 	/* For compatibility with previous versions of Remind, which
 	   used a static buffer for reading results from shell() command */
 	maxlen = int32(511)
@@ -21005,19 +20997,9 @@ func _FShell(tls *libc.TLS, info uintptr) (r1 int32) {
 			maxlen = XMaxStringLen
 		}
 	}
-	stdin_dup = libc.Xdup(tls, m_STDIN_FILENO)
-	if stdin_dup >= 0 {
-		devnull = libc.Xopen(tls, __ccgo_ts+6442, m_O_RDONLY, 0)
-		if devnull >= 0 {
-			if libc.Xdup2(tls, devnull, m_STDIN_FILENO) >= 0 {
-				Xset_cloexec(tls, stdin_dup)
-			} else {
-				libc.Xclose(tls, stdin_dup)
-				stdin_dup = -int32(1)
-			}
-			libc.Xclose(tls, devnull)
-		}
-	}
+	/* See the note about stdin in IncludeCmd in files.c */
+	stdin_dup = -int32(1)
+
 	fp = libshim.Xrem_popen(tls, *(*uintptr)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 16)), __ccgo_ts+1678)
 	if !(fp != 0) {
 		if stdin_dup >= 0 {
@@ -21333,7 +21315,7 @@ func _FIif(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst ui
 		XDBufInit(tls, bp+24)
 	}
 	if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
-		XDBufPuts(tls, bp+24, __ccgo_ts+8152)
+		XDBufPuts(tls, bp+24, __ccgo_ts+8142)
 	}
 	cur = (*Texpr_node)(unsafe.Pointer(node)).Fchild
 	if !((*Texpr_node)(unsafe.Pointer(node)).Fnum_kids%libc.Int32FromInt32(2) != 0) {
@@ -21382,7 +21364,7 @@ func _FIif(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst ui
 				XDBufPuts(tls, bp+24, XPrintValue(tls, ans, libc.UintptrFromInt32(0)))
 				cur = (*Texpr_node_struct)(unsafe.Pointer((*Texpr_node)(unsafe.Pointer(cur)).Fsibling)).Fsibling
 				for cur != 0 {
-					XDBufPuts(tls, bp+24, __ccgo_ts+7919)
+					XDBufPuts(tls, bp+24, __ccgo_ts+7909)
 					cur = (*Texpr_node)(unsafe.Pointer(cur)).Fsibling
 				}
 				XDBufPuts(tls, bp+24, __ccgo_ts+5179)
@@ -21402,7 +21384,7 @@ func _FIif(tls *libc.TLS, node uintptr, locals uintptr, ans uintptr, nonconst ui
 			(**(**TValue)(__ccgo_up(bp))).Ftype1 = m_ERR_TYPE4
 		}
 		if XDebugFlag&int32(m_DB_PRTEXPR3) != 0 {
-			XDBufPuts(tls, bp+24, __ccgo_ts+7919)
+			XDBufPuts(tls, bp+24, __ccgo_ts+7909)
 		}
 		cur = (*Texpr_node_struct)(unsafe.Pointer((*Texpr_node)(unsafe.Pointer(cur)).Fsibling)).Fsibling
 	}
@@ -21456,7 +21438,7 @@ func _FFiledir(tls *libc.TLS, info uintptr) (r1 int32) {
 	}
 	if (*TDynamicBuffer)(unsafe.Pointer(bp)).Flen1 == uint64(0) {
 		XDBufFree(tls, bp)
-		return _RetStrVal(tls, __ccgo_ts+8157, info)
+		return _RetStrVal(tls, __ccgo_ts+8147, info)
 	}
 	s = (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer + uintptr((*TDynamicBuffer)(unsafe.Pointer(bp)).Flen1) - uintptr(1)
 	for s > (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer && libc.Int32FromUint8(**(**uint8)(__ccgo_up(s))) != int32('/') {
@@ -21466,7 +21448,7 @@ func _FFiledir(tls *libc.TLS, info uintptr) (r1 int32) {
 		**(**uint8)(__ccgo_up(s)) = uint8(0)
 		r = _RetStrValDynBuf(tls, bp, info)
 	} else {
-		r = _RetStrVal(tls, __ccgo_ts+8157, info)
+		r = _RetStrVal(tls, __ccgo_ts+8147, info)
 	}
 	XDBufFree(tls, bp)
 	return r
@@ -21530,15 +21512,15 @@ func _FAccess(tls *libc.TLS, info uintptr) (r int32) {
 func _FTypeof(tls *libc.TLS, info uintptr) (r int32) {
 	switch (**(**TValue)(__ccgo_up((*Tfunc_info)(unsafe.Pointer(info)).Fargs))).Ftype1 {
 	case int32(m_INT_TYPE3):
-		return _RetStrVal(tls, __ccgo_ts+8159, info)
+		return _RetStrVal(tls, __ccgo_ts+8149, info)
 	case int32(m_DATE_TYPE3):
-		return _RetStrVal(tls, __ccgo_ts+8163, info)
+		return _RetStrVal(tls, __ccgo_ts+8153, info)
 	case int32(m_TIME_TYPE5):
-		return _RetStrVal(tls, __ccgo_ts+8168, info)
+		return _RetStrVal(tls, __ccgo_ts+8158, info)
 	case int32(m_STR_TYPE4):
-		return _RetStrVal(tls, __ccgo_ts+8173, info)
+		return _RetStrVal(tls, __ccgo_ts+8163, info)
 	case libc.Int32FromInt32(m_TIME_TYPE5) | libc.Int32FromInt32(m_DATE_TYPE3):
-		return _RetStrVal(tls, __ccgo_ts+8180, info)
+		return _RetStrVal(tls, __ccgo_ts+8170, info)
 	default:
 		return _RetStrVal(tls, __ccgo_ts+5766, info)
 	}
@@ -21555,7 +21537,7 @@ func _FTypeof(tls *libc.TLS, info uintptr) (r int32) {
 //	/*                                                             */
 //	/***************************************************************/
 func _FLanguage(tls *libc.TLS, info uintptr) (r int32) {
-	return _RetStrVal(tls, __ccgo_ts+8189, info)
+	return _RetStrVal(tls, __ccgo_ts+8179, info)
 }
 
 // C documentation
@@ -21911,7 +21893,7 @@ func _FEscape(tls *libc.TLS, info uintptr) (r1 int32) {
 	for **(**uint8)(__ccgo_up(s)) != 0 {
 		switch libc.Int32FromUint8(**(**uint8)(__ccgo_up(s))) {
 		case int32('\a'):
-			r = XDBufPuts(tls, bp, __ccgo_ts+8197)
+			r = XDBufPuts(tls, bp, __ccgo_ts+8187)
 		case int32('\b'):
 			r = XDBufPuts(tls, bp, __ccgo_ts+300)
 		case int32('\f'):
@@ -21923,7 +21905,7 @@ func _FEscape(tls *libc.TLS, info uintptr) (r1 int32) {
 		case int32('\t'):
 			r = XDBufPuts(tls, bp, __ccgo_ts+312)
 		case int32('\v'):
-			r = XDBufPuts(tls, bp, __ccgo_ts+8200)
+			r = XDBufPuts(tls, bp, __ccgo_ts+8190)
 		case int32('\\'):
 			r = XDBufPuts(tls, bp, __ccgo_ts+318)
 		case int32('"'):
@@ -21998,11 +21980,11 @@ func _FHtmlEscape(tls *libc.TLS, info uintptr) (r1 int32) {
 	for **(**uint8)(__ccgo_up(s)) != 0 {
 		switch libc.Int32FromUint8(**(**uint8)(__ccgo_up(s))) {
 		case int32('<'):
-			r = XDBufPuts(tls, bp, __ccgo_ts+8203)
+			r = XDBufPuts(tls, bp, __ccgo_ts+8193)
 		case int32('>'):
-			r = XDBufPuts(tls, bp, __ccgo_ts+8208)
+			r = XDBufPuts(tls, bp, __ccgo_ts+8198)
 		case int32('&'):
-			r = XDBufPuts(tls, bp, __ccgo_ts+8213)
+			r = XDBufPuts(tls, bp, __ccgo_ts+8203)
 		default:
 			if (*TDynamicBuffer)(unsafe.Pointer(bp)).FallocatedLen <= (*TDynamicBuffer)(unsafe.Pointer(bp)).Flen1+uint64(1) {
 				v1 = XDBufPutcFN(tls, bp, **(**uint8)(__ccgo_up(s)))
@@ -22342,7 +22324,7 @@ func _FTimezone(tls *libc.TLS, info uintptr) (r int32) {
 	**(**Ttime_t)(__ccgo_up(bp + 72)) = libc.Xmktime(tls, bp+16)
 	withzone = libc.Xlocaltime(tls, bp+72)
 	(**(**[64]uint8)(__ccgo_up(bp + 80)))[0] = uint8(0)
-	libc.Xstrftime(tls, bp+80, uint64(64), __ccgo_ts+8219, withzone)
+	libc.Xstrftime(tls, bp+80, uint64(64), __ccgo_ts+8209, withzone)
 	return _RetStrVal(tls, bp+80, info)
 }
 
@@ -22443,14 +22425,14 @@ func _UTCToLocalHelper(tls *libc.TLS, datetime int32, ret uintptr) (r int32) {
 	XFromDSE(tls, datetime/int32(m_MINUTES_PER_DAY), bp, bp+4, bp+8)
 	hr = datetime % int32(m_MINUTES_PER_DAY) / int32(60)
 	min = datetime % int32(m_MINUTES_PER_DAY) % int32(60)
-	old_tz = libc.Xgetenv(tls, __ccgo_ts+8222)
+	old_tz = libc.Xgetenv(tls, __ccgo_ts+8212)
 	if old_tz != 0 {
 		old_tz = libc.Xstrdup(tls, old_tz)
 		if !(old_tz != 0) {
 			return int32(m_E_NO_MEM)
 		}
 	}
-	Xtz_set_tz(tls, __ccgo_ts+8225)
+	Xtz_set_tz(tls, __ccgo_ts+8215)
 	libc.Xmemset(tls, bp+24, 0, uint64(56))
 	(**(**Ttm)(__ccgo_up(bp + 24))).Ftm_sec = 0
 	(**(**Ttm)(__ccgo_up(bp + 24))).Ftm_min = min
@@ -22844,25 +22826,25 @@ func _FPsshade(tls *libc.TLS, info uintptr) (r int32) {
 		;
 		i = i + 1
 	}
-	if Xwarning_level(tls, __ccgo_ts+8229) != 0 {
+	if Xwarning_level(tls, __ccgo_ts+8219) != 0 {
 		if !(_psshade_warned != 0) {
 			_psshade_warned = int32(1)
-			XWprint(tls, Xtr(tls, __ccgo_ts+8238), 0)
+			XWprint(tls, Xtr(tls, __ccgo_ts+8228), 0)
 		}
 	}
-	libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8290, 0)
+	libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8280, 0)
 	len1 = len1 - libc.Xstrlen(tls, s)
 	s = s + uintptr(libc.Xstrlen(tls, s))
-	libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8315, 0)
+	libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8305, 0)
 	len1 = len1 - libc.Xstrlen(tls, s)
 	s = s + uintptr(libc.Xstrlen(tls, s))
-	libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8329, 0)
+	libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8319, 0)
 	len1 = len1 - libc.Xstrlen(tls, s)
 	s = s + uintptr(libc.Xstrlen(tls, s))
 	if (*Tfunc_info)(unsafe.Pointer(info)).Fnargs == int32(1) {
-		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8396, libc.VaList(bp+264, *(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 16))))
+		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8386, libc.VaList(bp+264, *(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 16))))
 	} else {
-		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8469, libc.VaList(bp+264, *(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 16)), *(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 1*24 + 16)), *(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 2*24 + 16))))
+		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8459, libc.VaList(bp+264, *(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 16)), *(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 1*24 + 16)), *(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 2*24 + 16))))
 	}
 	return _RetStrVal(tls, bp, info)
 }
@@ -22926,65 +22908,65 @@ func _FPsmoon(tls *libc.TLS, info uintptr) (r int32) {
 			}
 		}
 	}
-	if Xwarning_level(tls, __ccgo_ts+8229) != 0 {
+	if Xwarning_level(tls, __ccgo_ts+8219) != 0 {
 		if !(_psmoon_warned != 0) {
 			_psmoon_warned = int32(1)
-			XWprint(tls, Xtr(tls, __ccgo_ts+8568), 0)
+			XWprint(tls, Xtr(tls, __ccgo_ts+8558), 0)
 		}
 	}
 	if size > 0 {
 		libc.X__builtin_snprintf(tls, bp+512, uint64(30), __ccgo_ts+481, libc.VaList(bp+584, size))
 	} else {
-		libc.Xstrcpy(tls, bp+512, __ccgo_ts+8618)
+		libc.Xstrcpy(tls, bp+512, __ccgo_ts+8608)
 	}
 	if fontsize > 0 {
 		libc.X__builtin_snprintf(tls, bp+542, uint64(30), __ccgo_ts+481, libc.VaList(bp+584, fontsize))
 	} else {
-		libc.Xstrcpy(tls, bp+542, __ccgo_ts+8632)
+		libc.Xstrcpy(tls, bp+542, __ccgo_ts+8622)
 	}
-	libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8642, libc.VaList(bp+584, bp+512, bp+512))
+	libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8632, libc.VaList(bp+584, bp+512, bp+512))
 	len1 = len1 - libc.Xstrlen(tls, s)
 	s = s + uintptr(libc.Xstrlen(tls, s))
-	libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8708, libc.VaList(bp+584, bp+512))
+	libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8698, libc.VaList(bp+584, bp+512))
 	len1 = len1 - libc.Xstrlen(tls, s)
 	s = s + uintptr(libc.Xstrlen(tls, s))
 	switch *(*int32)(unsafe.Pointer((*Tfunc_info)(unsafe.Pointer(info)).Fargs + 16)) {
 	case 0:
-		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8732, 0)
+		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8722, 0)
 		len1 = len1 - libc.Xstrlen(tls, s)
 		s = s + uintptr(libc.Xstrlen(tls, s))
 	case int32(2):
-		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8738, 0)
+		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8728, 0)
 		len1 = len1 - libc.Xstrlen(tls, s)
 		s = s + uintptr(libc.Xstrlen(tls, s))
 	case int32(1):
-		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8738, 0)
+		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8728, 0)
 		len1 = len1 - libc.Xstrlen(tls, s)
 		s = s + uintptr(libc.Xstrlen(tls, s))
-		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8746, libc.VaList(bp+584, bp+512, bp+512))
+		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8736, libc.VaList(bp+584, bp+512, bp+512))
 		len1 = len1 - libc.Xstrlen(tls, s)
 		s = s + uintptr(libc.Xstrlen(tls, s))
-		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8797, libc.VaList(bp+584, bp+512))
+		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8787, libc.VaList(bp+584, bp+512))
 		len1 = len1 - libc.Xstrlen(tls, s)
 		s = s + uintptr(libc.Xstrlen(tls, s))
 	default:
-		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8738, 0)
+		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8728, 0)
 		len1 = len1 - libc.Xstrlen(tls, s)
 		s = s + uintptr(libc.Xstrlen(tls, s))
-		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8746, libc.VaList(bp+584, bp+512, bp+512))
+		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8736, libc.VaList(bp+584, bp+512, bp+512))
 		len1 = len1 - libc.Xstrlen(tls, s)
 		s = s + uintptr(libc.Xstrlen(tls, s))
-		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8827, libc.VaList(bp+584, bp+512))
+		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8817, libc.VaList(bp+584, bp+512))
 		len1 = len1 - libc.Xstrlen(tls, s)
 		s = s + uintptr(libc.Xstrlen(tls, s))
 		break
 	}
 	if extra != 0 {
-		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8857, libc.VaList(bp+584, bp+512, bp+512, bp+512, bp+512, bp+542, extra))
+		libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8847, libc.VaList(bp+584, bp+512, bp+512, bp+512, bp+512, bp+542, extra))
 		len1 = len1 - libc.Xstrlen(tls, s)
 		s = s + uintptr(libc.Xstrlen(tls, s))
 	}
-	libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8983, 0)
+	libc.X__builtin_snprintf(tls, s, len1, __ccgo_ts+8973, 0)
 	return _RetStrVal(tls, bp, info)
 }
 
@@ -23239,10 +23221,10 @@ func Xtz_set_tz(tls *libc.TLS, tz uintptr) (r1 int32) {
 	var r int32
 	_ = r
 	if tz == libc.UintptrFromInt32(0) {
-		libc.Xunsetenv(tls, __ccgo_ts+8222)
+		libc.Xunsetenv(tls, __ccgo_ts+8212)
 		r = 0
 	} else {
-		r = libc.Xsetenv(tls, __ccgo_ts+8222, tz, int32(1))
+		r = libc.Xsetenv(tls, __ccgo_ts+8212, tz, int32(1))
 	}
 	libc.Xtzset(tls)
 	return r
@@ -23266,7 +23248,7 @@ func Xtz_convert(tls *libc.TLS, year int32, month int32, day int32, hour int32, 
 	(*Ttm)(unsafe.Pointer(tm)).Ftm_yday = 0          /* ignored by mktime */
 	(*Ttm)(unsafe.Pointer(tm)).Ftm_isdst = -int32(1) /* information not available */
 	/* backup old TZ env var */
-	old_tz = libc.Xgetenv(tls, __ccgo_ts+8222)
+	old_tz = libc.Xgetenv(tls, __ccgo_ts+8212)
 	if old_tz != 0 {
 		old_tz = libc.Xstrdup(tls, old_tz)
 		if !(old_tz != 0) {
@@ -23711,7 +23693,7 @@ func _FEvalTrig(tls *libc.TLS, info uintptr) (r int32) {
 	} else {
 		/* Hokey... */
 		if Xget_scanfrom(tls, bp+104) != XDSEToday {
-			XWprint(tls, Xtr(tls, __ccgo_ts+8993), 0)
+			XWprint(tls, Xtr(tls, __ccgo_ts+8983), 0)
 		}
 		XEnterTimezone(tls, (**(**TTrigger)(__ccgo_up(bp + 104))).Ftz)
 		dse = XComputeTrigger(tls, scanfrom, bp+104, bp+520, bp+544, 0)
@@ -23790,7 +23772,7 @@ func _FMultiTrig(tls *libc.TLS, info uintptr) (r int32) {
 			return int32(m_E_PARSE_ERR)
 		}
 		if (**(**TTimeTrig)(__ccgo_up(bp + 520))).Fttime != int32(m_INT_MAX2) {
-			XEprint(tls, Xtr(tls, __ccgo_ts+9057), 0)
+			XEprint(tls, Xtr(tls, __ccgo_ts+9047), 0)
 			return int32(m_E_PARSE_ERR)
 		}
 		dse = XComputeTrigger(tls, Xget_scanfrom(tls, bp+104), bp+104, bp+520, bp+544, 0)
@@ -23903,7 +23885,7 @@ func _rows_or_cols(tls *libc.TLS, info uintptr, want_rows int32) (r int32) {
 		fd = int32(m_STDERR_FILENO)
 	}
 	if !(libc.Xisatty(tls, fd) != 0) {
-		fd = libc.Xopen(tls, __ccgo_ts+9102, m_O_RDONLY, 0)
+		fd = libc.Xopen(tls, __ccgo_ts+9092, m_O_RDONLY1, 0)
 		if fd < 0 {
 			*(*int32)(unsafe.Pointer(info + 16 + 16)) = -int32(1)
 			return m_OK
@@ -24171,7 +24153,7 @@ func Xprint_builtinfunc_tokens(tls *libc.TLS) {
 	defer tls.Free(16)
 	var i int32
 	_ = i
-	libc.Xprintf(tls, __ccgo_ts+9111, 0)
+	libc.Xprintf(tls, __ccgo_ts+9101, 0)
 	i = 0
 	for {
 		if !(i < XNumFuncs) {
@@ -24751,9 +24733,9 @@ func Xhash_table_dump_stats(tls *libc.TLS, t uintptr, fp uintptr) {
 	defer tls.Free(128)
 	var _ /* stat at bp+0 */ Thash_table_stats
 	_hash_table_get_stats(tls, t, bp)
-	libc.Xfprintf(tls, fp, __ccgo_ts+12452, libc.VaList(bp+88, (**(**Thash_table_stats)(__ccgo_up(bp))).Fnum_entries, (**(**Thash_table_stats)(__ccgo_up(bp))).Fnum_buckets, (**(**Thash_table_stats)(__ccgo_up(bp))).Fnum_nonempty_buckets))
-	libc.Xfprintf(tls, fp, __ccgo_ts+12506, libc.VaList(bp+88, (**(**Thash_table_stats)(__ccgo_up(bp))).Fmax_len, (**(**Thash_table_stats)(__ccgo_up(bp))).Fmin_len, (**(**Thash_table_stats)(__ccgo_up(bp))).Favg_len, (**(**Thash_table_stats)(__ccgo_up(bp))).Fstddev, (**(**Thash_table_stats)(__ccgo_up(bp))).Favg_nonempty_len))
-	libc.Xfprintf(tls, fp, __ccgo_ts+12586, libc.VaList(bp+88, (**(**Thash_table_stats)(__ccgo_up(bp))).Fnum_growths, (**(**Thash_table_stats)(__ccgo_up(bp))).Fnum_shrinks))
+	libc.Xfprintf(tls, fp, __ccgo_ts+12442, libc.VaList(bp+88, (**(**Thash_table_stats)(__ccgo_up(bp))).Fnum_entries, (**(**Thash_table_stats)(__ccgo_up(bp))).Fnum_buckets, (**(**Thash_table_stats)(__ccgo_up(bp))).Fnum_nonempty_buckets))
+	libc.Xfprintf(tls, fp, __ccgo_ts+12496, libc.VaList(bp+88, (**(**Thash_table_stats)(__ccgo_up(bp))).Fmax_len, (**(**Thash_table_stats)(__ccgo_up(bp))).Fmin_len, (**(**Thash_table_stats)(__ccgo_up(bp))).Favg_len, (**(**Thash_table_stats)(__ccgo_up(bp))).Fstddev, (**(**Thash_table_stats)(__ccgo_up(bp))).Favg_nonempty_len))
+	libc.Xfprintf(tls, fp, __ccgo_ts+12576, libc.VaList(bp+88, (**(**Thash_table_stats)(__ccgo_up(bp))).Fnum_growths, (**(**Thash_table_stats)(__ccgo_up(bp))).Fnum_shrinks))
 }
 
 // C documentation
@@ -24859,37 +24841,37 @@ type TAltMonthName = struct {
 }
 
 var _HebMonthNames = [14]uintptr{
-	0:  __ccgo_ts + 12616,
-	1:  __ccgo_ts + 12624,
-	2:  __ccgo_ts + 12632,
-	3:  __ccgo_ts + 12639,
-	4:  __ccgo_ts + 12645,
-	5:  __ccgo_ts + 12651,
-	6:  __ccgo_ts + 12658,
-	7:  __ccgo_ts + 12665,
-	8:  __ccgo_ts + 12671,
-	9:  __ccgo_ts + 12676,
-	10: __ccgo_ts + 12682,
-	11: __ccgo_ts + 12688,
-	12: __ccgo_ts + 12691,
-	13: __ccgo_ts + 12696,
+	0:  __ccgo_ts + 12606,
+	1:  __ccgo_ts + 12614,
+	2:  __ccgo_ts + 12622,
+	3:  __ccgo_ts + 12629,
+	4:  __ccgo_ts + 12635,
+	5:  __ccgo_ts + 12641,
+	6:  __ccgo_ts + 12648,
+	7:  __ccgo_ts + 12655,
+	8:  __ccgo_ts + 12661,
+	9:  __ccgo_ts + 12666,
+	10: __ccgo_ts + 12672,
+	11: __ccgo_ts + 12678,
+	12: __ccgo_ts + 12681,
+	13: __ccgo_ts + 12686,
 }
 
 var _IvritMonthNames = [14]uintptr{
-	0:  __ccgo_ts + 12701,
-	1:  __ccgo_ts + 12710,
-	2:  __ccgo_ts + 12721,
-	3:  __ccgo_ts + 12730,
-	4:  __ccgo_ts + 12737,
-	5:  __ccgo_ts + 12744,
-	6:  __ccgo_ts + 12755,
-	7:  __ccgo_ts + 12766,
-	8:  __ccgo_ts + 12775,
-	9:  __ccgo_ts + 12784,
-	10: __ccgo_ts + 12793,
-	11: __ccgo_ts + 12802,
-	12: __ccgo_ts + 12807,
-	13: __ccgo_ts + 12816,
+	0:  __ccgo_ts + 12691,
+	1:  __ccgo_ts + 12700,
+	2:  __ccgo_ts + 12711,
+	3:  __ccgo_ts + 12720,
+	4:  __ccgo_ts + 12727,
+	5:  __ccgo_ts + 12734,
+	6:  __ccgo_ts + 12745,
+	7:  __ccgo_ts + 12756,
+	8:  __ccgo_ts + 12765,
+	9:  __ccgo_ts + 12774,
+	10: __ccgo_ts + 12783,
+	11: __ccgo_ts + 12792,
+	12: __ccgo_ts + 12797,
+	13: __ccgo_ts + 12806,
 }
 
 // C documentation
@@ -24897,69 +24879,69 @@ var _IvritMonthNames = [14]uintptr{
 //	/* Alternate spellings */
 var _AltMonthSpellings = [17]TAltMonthName{
 	0: {
-		Fname: __ccgo_ts + 12823,
+		Fname: __ccgo_ts + 12813,
 	},
 	1: {
-		Fname: __ccgo_ts + 12830,
+		Fname: __ccgo_ts + 12820,
 	},
 	2: {
-		Fname: __ccgo_ts + 12838,
+		Fname: __ccgo_ts + 12828,
 		Fmon:  int32(m_HESHVAN),
 	},
 	3: {
-		Fname: __ccgo_ts + 12847,
+		Fname: __ccgo_ts + 12837,
 		Fmon:  int32(m_HESHVAN),
 	},
 	4: {
-		Fname: __ccgo_ts + 12856,
+		Fname: __ccgo_ts + 12846,
 		Fmon:  int32(m_SHVAT),
 	},
 	5: {
-		Fname: __ccgo_ts + 12863,
+		Fname: __ccgo_ts + 12853,
 		Fmon:  int32(m_TAMUZ),
 	},
 	6: {
-		Fname: __ccgo_ts + 12870,
+		Fname: __ccgo_ts + 12860,
 		Fmon:  int32(m_ADARA),
 	},
 	7: {
-		Fname: __ccgo_ts + 12877,
+		Fname: __ccgo_ts + 12867,
 		Fmon:  int32(m_ADARA),
 	},
 	8: {
-		Fname: __ccgo_ts + 12884,
+		Fname: __ccgo_ts + 12874,
 		Fmon:  int32(m_ADARA),
 	},
 	9: {
-		Fname: __ccgo_ts + 12894,
+		Fname: __ccgo_ts + 12884,
 		Fmon:  int32(m_ADARA),
 	},
 	10: {
-		Fname: __ccgo_ts + 12903,
+		Fname: __ccgo_ts + 12893,
 		Fmon:  int32(m_ADARA),
 	},
 	11: {
-		Fname: __ccgo_ts + 12912,
+		Fname: __ccgo_ts + 12902,
 		Fmon:  int32(m_ADARB),
 	},
 	12: {
-		Fname: __ccgo_ts + 12919,
+		Fname: __ccgo_ts + 12909,
 		Fmon:  int32(m_ADARB),
 	},
 	13: {
-		Fname: __ccgo_ts + 12927,
+		Fname: __ccgo_ts + 12917,
 		Fmon:  int32(m_ADARB),
 	},
 	14: {
-		Fname: __ccgo_ts + 12937,
+		Fname: __ccgo_ts + 12927,
 		Fmon:  int32(m_ADARB),
 	},
 	15: {
-		Fname: __ccgo_ts + 12946,
+		Fname: __ccgo_ts + 12936,
 		Fmon:  int32(m_ADARB),
 	},
 	16: {
-		Fname: __ccgo_ts + 12956,
+		Fname: __ccgo_ts + 12946,
 		Fmon:  int32(m_IYAR),
 	},
 }
@@ -25362,7 +25344,7 @@ func XGetValidHebDate(tls *libc.TLS, yin int32, min int32, din int32, adarbehave
 			min = v1
 			**(**int32)(__ccgo_up(mout)) = v1
 		default:
-			XEprint(tls, Xtr(tls, __ccgo_ts+12962), libc.VaList(bp+8, adarbehave))
+			XEprint(tls, Xtr(tls, __ccgo_ts+12952), libc.VaList(bp+8, adarbehave))
 			return int32(m_E_SWERR)
 		}
 	}
@@ -25395,7 +25377,7 @@ func XGetValidHebDate(tls *libc.TLS, yin int32, min int32, din int32, adarbehave
 				}
 			}
 		}
-		XEprint(tls, __ccgo_ts+13003, libc.VaList(bp+8, jahr))
+		XEprint(tls, __ccgo_ts+12993, libc.VaList(bp+8, jahr))
 		return int32(m_E_SWERR)
 	case int32(m_JAHR_BACKWARD):
 		if min == int32(m_KISLEV) {
@@ -25420,10 +25402,10 @@ func XGetValidHebDate(tls *libc.TLS, yin int32, min int32, din int32, adarbehave
 				}
 			}
 		}
-		XEprint(tls, __ccgo_ts+13043, libc.VaList(bp+8, jahr))
+		XEprint(tls, __ccgo_ts+13033, libc.VaList(bp+8, jahr))
 		return int32(m_E_SWERR)
 	default:
-		XEprint(tls, __ccgo_ts+13083, libc.VaList(bp+8, jahr))
+		XEprint(tls, __ccgo_ts+13073, libc.VaList(bp+8, jahr))
 		return int32(m_E_SWERR)
 	}
 	return r
@@ -25521,14 +25503,14 @@ func XComputeJahr(tls *libc.TLS, y int32, m int32, d int32, ans uintptr) (r int3
 	monlen = _DaysInHebMonths(tls, len1)
 	/* Check for Adar A */
 	if m == int32(m_ADARA) && libc.Int32FromUint8(**(**uint8)(__ccgo_up(monlen + uintptr(m)))) == 0 {
-		XEprint(tls, Xtr(tls, __ccgo_ts+13123), libc.VaList(bp+8, y))
+		XEprint(tls, Xtr(tls, __ccgo_ts+13113), libc.VaList(bp+8, y))
 		return int32(m_E_BAD_HEBDATE)
 	}
 	if d < int32(1) || d > libc.Int32FromUint8(_MaxMonLen[m]) || m < 0 || m > int32(13) {
 		return int32(m_E_BAD_HEBDATE)
 	}
 	if d > libc.Int32FromUint8(**(**uint8)(__ccgo_up(monlen + uintptr(m)))) {
-		XEprint(tls, __ccgo_ts+13139, libc.VaList(bp+8, d, _HebMonthNames[m], y, XGetErr(tls, int32(m_E_BAD_HEBDATE))))
+		XEprint(tls, __ccgo_ts+13129, libc.VaList(bp+8, d, _HebMonthNames[m], y, XGetErr(tls, int32(m_E_BAD_HEBDATE))))
 		return int32(m_E_BAD_HEBDATE)
 	}
 	/* If the jahrzeit was in Adar A, we always use JAHR_BACKWARD */
@@ -25805,7 +25787,7 @@ func Xpop_excess_ifs(tls *libc.TLS, fname uintptr) {
 	}
 	for _if_pointer > _base_pointer {
 		if !(XHush != 0) {
-			libc.Xfprintf(tls, XErrFp, Xtr(tls, __ccgo_ts+13152), libc.VaList(bp+8, fname, _IfArray[_if_pointer-int32(1)].Flineno))
+			libc.Xfprintf(tls, XErrFp, Xtr(tls, __ccgo_ts+13142), libc.VaList(bp+8, fname, _IfArray[_if_pointer-int32(1)].Flineno))
 			libc.Xfprintf(tls, XErrFp, __ccgo_ts+538, 0)
 		}
 		_if_pointer = _if_pointer - 1
@@ -26031,7 +26013,7 @@ type Ttermios = struct {
 
 var _should_guess_terminal_background = int32(1)
 
-var _BadDate = __ccgo_ts + 13177
+var _BadDate = __ccgo_ts + 13167
 
 var _default_filename_buf TDynamicBuffer
 
@@ -26072,21 +26054,21 @@ func _DefaultFilename(tls *libc.TLS) (r uintptr) {
 	var s uintptr
 	_ = s
 	XDBufInit(tls, uintptr(unsafe.Pointer(&_default_filename_buf)))
-	s = libc.Xgetenv(tls, __ccgo_ts+13207)
+	s = libc.Xgetenv(tls, __ccgo_ts+13197)
 	if s != 0 {
 		return s
 	}
-	s = libc.Xgetenv(tls, __ccgo_ts+13219)
+	s = libc.Xgetenv(tls, __ccgo_ts+13209)
 	if s != 0 {
 		return s
 	}
-	s = libc.Xgetenv(tls, __ccgo_ts+13232)
+	s = libc.Xgetenv(tls, __ccgo_ts+13222)
 	if !(s != 0) {
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+13237, 0)
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+13227, 0)
 		libshim.Xrem_exit(tls, int32(m_EXIT_FAILURE))
 	}
 	XDBufPuts(tls, uintptr(unsafe.Pointer(&_default_filename_buf)), s)
-	XDBufPuts(tls, uintptr(unsafe.Pointer(&_default_filename_buf)), __ccgo_ts+13309)
+	XDBufPuts(tls, uintptr(unsafe.Pointer(&_default_filename_buf)), __ccgo_ts+13299)
 	return (*TDynamicBuffer)(unsafe.Pointer(uintptr(unsafe.Pointer(&_default_filename_buf)))).Fbuffer
 }
 
@@ -26114,16 +26096,16 @@ func XInitRemind(tls *libc.TLS, argc int32, argv uintptr) {
 	XInitialFile = libc.UintptrFromInt32(0)
 	/* Make sure remind is not installed set-uid or set-gid */
 	if libc.Xgetgid(tls) != libc.Xgetegid(tls) || libc.Xgetuid(tls) != libc.Xgeteuid(tls) {
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+13321, 0)
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+13311, 0)
 		libshim.Xrem_exit(tls, int32(m_EXIT_FAILURE))
 	}
 	dse = -int32(1)
 	/* Initialize local time zone */
-	XLocalTimeZone = libc.Xgetenv(tls, __ccgo_ts+8222)
+	XLocalTimeZone = libc.Xgetenv(tls, __ccgo_ts+8212)
 	if XLocalTimeZone != 0 {
 		XLocalTimeZone = libc.Xstrdup(tls, XLocalTimeZone)
 		if !(XLocalTimeZone != 0) {
-			libc.Xfprintf(tls, libc.Xstderr, __ccgo_ts+13402, 0)
+			libc.Xfprintf(tls, libc.Xstderr, __ccgo_ts+13392, 0)
 			libshim.Xrem_exit(tls, int32(1))
 		}
 	}
@@ -26139,7 +26121,7 @@ func XInitRemind(tls *libc.TLS, argc int32, argv uintptr) {
 	/* Initialize global dynamic buffers */
 	XDBufInit(tls, uintptr(unsafe.Pointer(&XBanner)))
 	XDBufInit(tls, uintptr(unsafe.Pointer(&XLineBuffer)))
-	XDBufPuts(tls, uintptr(unsafe.Pointer(&XBanner)), __ccgo_ts+13418)
+	XDBufPuts(tls, uintptr(unsafe.Pointer(&XBanner)), __ccgo_ts+13408)
 	XPurgeFP = libc.UintptrFromInt32(0)
 	XInitDedupeTable(tls)
 	**(**int32)(__ccgo_up(bp)) = -int32(1)
@@ -26166,11 +26148,11 @@ func XInitRemind(tls *libc.TLS, argc int32, argv uintptr) {
 		} else {
 			s = s + 1
 		}
-		if !(libc.Xstrcmp(tls, s, __ccgo_ts+13451) != 0) {
+		if !(libc.Xstrcmp(tls, s, __ccgo_ts+13441) != 0) {
 			InvokedAsRem = int32(1)
 		}
 	} else {
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+13455, 0)
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+13445, 0)
 		libshim.Xrem_exit(tls, int32(m_EXIT_FAILURE))
 	}
 	/* Parse the command-line options */
@@ -26336,7 +26318,7 @@ func XInitRemind(tls *libc.TLS, argc int32, argv uintptr) {
 						XUseTrueColors = int32(1)
 					} else {
 						if x != 0 {
-							libc.Xfprintf(tls, XErrFp, __ccgo_ts+13528, libc.VaList(bp+48, **(**uintptr)(__ccgo_up(argv))))
+							libc.Xfprintf(tls, XErrFp, __ccgo_ts+13518, libc.VaList(bp+48, **(**uintptr)(__ccgo_up(argv))))
 						}
 					}
 				}
@@ -26366,7 +26348,7 @@ func XInitRemind(tls *libc.TLS, argc int32, argv uintptr) {
 									_should_guess_terminal_background = 0
 									XTerminalBackground = -int32(1)
 								} else {
-									libc.Xfprintf(tls, XErrFp, __ccgo_ts+13575, libc.VaList(bp+48, **(**uintptr)(__ccgo_up(argv))))
+									libc.Xfprintf(tls, XErrFp, __ccgo_ts+13565, libc.VaList(bp+48, **(**uintptr)(__ccgo_up(argv))))
 								}
 							}
 						}
@@ -26382,7 +26364,7 @@ func XInitRemind(tls *libc.TLS, argc int32, argv uintptr) {
 					arg = arg + 1
 				}
 				if x != 0 && x != int32(1) {
-					libc.Xfprintf(tls, XErrFp, __ccgo_ts+13625, libc.VaList(bp+48, **(**uintptr)(__ccgo_up(argv))))
+					libc.Xfprintf(tls, XErrFp, __ccgo_ts+13615, libc.VaList(bp+48, **(**uintptr)(__ccgo_up(argv))))
 					x = 0
 				}
 				XUseBGVTColors = x
@@ -26654,7 +26636,7 @@ func XInitRemind(tls *libc.TLS, argc int32, argv uintptr) {
 				break
 			}
 			if weeks != 0 {
-				XCalType = __ccgo_ts + 13669
+				XCalType = __ccgo_ts + 13659
 				XCalWeeks = 0
 				for libc.BoolInt32(uint32(uint8(**(**uint8)(__ccgo_up(arg))))-uint32('0') < uint32(10)) != 0 {
 					XCalWeeks = XCalWeeks * int32(10)
@@ -26698,7 +26680,7 @@ func XInitRemind(tls *libc.TLS, argc int32, argv uintptr) {
 				break
 			}
 			if weeks != 0 {
-				XCalType = __ccgo_ts + 13669
+				XCalType = __ccgo_ts + 13659
 				XCalWeeks = 0
 				for libc.BoolInt32(uint32(uint8(**(**uint8)(__ccgo_up(arg))))-uint32('0') < uint32(10)) != 0 {
 					XCalWeeks = XCalWeeks * int32(10)
@@ -26755,7 +26737,7 @@ func XInitRemind(tls *libc.TLS, argc int32, argv uintptr) {
 				arg = arg + 1
 			}
 			if weeks != 0 {
-				XCalType = __ccgo_ts + 13669
+				XCalType = __ccgo_ts + 13659
 				XCalWeeks = 0
 				for libc.BoolInt32(uint32(uint8(**(**uint8)(__ccgo_up(arg))))-uint32('0') < uint32(10)) != 0 {
 					XCalWeeks = XCalWeeks * int32(10)
@@ -26793,9 +26775,9 @@ func XInitRemind(tls *libc.TLS, argc int32, argv uintptr) {
 				if libc.Int32FromUint8(**(**uint8)(__ccgo_up(arg))) == int32('t') {
 					arg = arg + 1
 					/* -wt means get width from /dev/tty */
-					ttyfd = libc.Xopen(tls, __ccgo_ts+9102, m_O_RDONLY, 0)
+					ttyfd = libc.Xopen(tls, __ccgo_ts+9092, m_O_RDONLY1, 0)
 					if ttyfd < 0 {
-						libc.Xfprintf(tls, XErrFp, __ccgo_ts+13676, libc.VaList(bp+48, **(**uintptr)(__ccgo_up(argv)), libc.Xstrerror(tls, **(**int32)(__ccgo_up(libc.X__errno_location(tls))))))
+						libc.Xfprintf(tls, XErrFp, __ccgo_ts+13666, libc.VaList(bp+48, **(**uintptr)(__ccgo_up(argv)), libc.Xstrerror(tls, **(**int32)(__ccgo_up(libc.X__errno_location(tls))))))
 					} else {
 						_InitCalWidthAndFormWidth(tls, ttyfd)
 						libc.Xclose(tls, ttyfd)
@@ -27037,7 +27019,7 @@ func XInitRemind(tls *libc.TLS, argc int32, argv uintptr) {
 						XLocalSysTime = XSysTime
 					}
 				} else {
-					libc.Xfprintf(tls, libc.Xstderr, __ccgo_ts+13713, libc.VaList(bp+48, XGetErr(tls, r)))
+					libc.Xfprintf(tls, libc.Xstderr, __ccgo_ts+13703, libc.VaList(bp+48, XGetErr(tls, r)))
 					libshim.Xrem_exit(tls, int32(1))
 				}
 				continue
@@ -27096,7 +27078,7 @@ func XInitRemind(tls *libc.TLS, argc int32, argv uintptr) {
 				}
 			default:
 				if (**(**TToken)(__ccgo_up(bp + 16))).Ftype1 == int32(_T_Illegal) && (**(**TToken)(__ccgo_up(bp + 16))).Fval < 0 {
-					libc.Xfprintf(tls, XErrFp, __ccgo_ts+13758, libc.VaList(bp+48, XGetErr(tls, -(**(**TToken)(__ccgo_up(bp + 16))).Fval), arg))
+					libc.Xfprintf(tls, XErrFp, __ccgo_ts+13748, libc.VaList(bp+48, XGetErr(tls, -(**(**TToken)(__ccgo_up(bp + 16))).Fval), arg))
 					XUsage(tls)
 				}
 				XUsage(tls)
@@ -27152,50 +27134,50 @@ func XInitRemind(tls *libc.TLS, argc int32, argv uintptr) {
 func XUsage(tls *libc.TLS) {
 	bp := tls.Alloc(16)
 	defer tls.Free(16)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+13768, libc.VaList(bp+8, __ccgo_ts+7971))
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+13817, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+13758, libc.VaList(bp+8, __ccgo_ts+7961))
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+13807, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+13862, 0)
 	libc.Xfprintf(tls, XErrFp, __ccgo_ts+13872, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+13882, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+13944, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+13976, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14019, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14074, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14129, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14193, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14258, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14314, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14394, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14416, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14448, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14503, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14540, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14609, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14646, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14704, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14760, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14801, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14860, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14914, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14969, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15011, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15078, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15129, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15184, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15231, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15282, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15298, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15346, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15412, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15465, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15520, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15585, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15646, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15721, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15791, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15852, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15912, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15973, 0)
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+16023, libc.VaList(bp+8, __ccgo_ts+16046))
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+13934, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+13966, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14009, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14064, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14119, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14183, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14248, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14304, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14384, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14406, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14438, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14493, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14530, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14599, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14636, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14694, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14750, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14791, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14850, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14904, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+14959, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15001, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15068, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15119, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15174, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15221, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15272, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15288, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15336, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15402, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15455, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15510, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15575, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15636, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15711, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15781, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15842, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15902, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+15963, 0)
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+16013, libc.VaList(bp+8, __ccgo_ts+16036))
 	libshim.Xrem_exit(tls, int32(m_EXIT_FAILURE))
 }
 
@@ -27243,7 +27225,7 @@ func _ChgUser(tls *libc.TLS, user uintptr) {
 		libc.Xfprintf(tls, XErrFp, __ccgo_ts+538, 0)
 		libshim.Xrem_exit(tls, int32(m_EXIT_FAILURE))
 	}
-	libc.Xsprintf(tls, _home, __ccgo_ts+16087, libc.VaList(bp+8, (*Tpasswd)(unsafe.Pointer(pwent)).Fpw_dir))
+	libc.Xsprintf(tls, _home, __ccgo_ts+16077, libc.VaList(bp+8, (*Tpasswd)(unsafe.Pointer(pwent)).Fpw_dir))
 	libc.Xputenv(tls, _home)
 	_shell = libc.Xmalloc(tls, libc.Xstrlen(tls, (*Tpasswd)(unsafe.Pointer(pwent)).Fpw_shell)+uint64(7))
 	if !(_shell != 0) {
@@ -27251,7 +27233,7 @@ func _ChgUser(tls *libc.TLS, user uintptr) {
 		libc.Xfprintf(tls, XErrFp, __ccgo_ts+538, 0)
 		libshim.Xrem_exit(tls, int32(m_EXIT_FAILURE))
 	}
-	libc.Xsprintf(tls, _shell, __ccgo_ts+16095, libc.VaList(bp+8, (*Tpasswd)(unsafe.Pointer(pwent)).Fpw_shell))
+	libc.Xsprintf(tls, _shell, __ccgo_ts+16085, libc.VaList(bp+8, (*Tpasswd)(unsafe.Pointer(pwent)).Fpw_shell))
 	libc.Xputenv(tls, _shell)
 	if (*Tpasswd)(unsafe.Pointer(pwent)).Fpw_uid != 0 {
 		_username = libc.Xmalloc(tls, libc.Xstrlen(tls, (*Tpasswd)(unsafe.Pointer(pwent)).Fpw_name)+uint64(6))
@@ -27260,7 +27242,7 @@ func _ChgUser(tls *libc.TLS, user uintptr) {
 			libc.Xfprintf(tls, XErrFp, __ccgo_ts+538, 0)
 			libshim.Xrem_exit(tls, int32(m_EXIT_FAILURE))
 		}
-		libc.Xsprintf(tls, _username, __ccgo_ts+16104, libc.VaList(bp+8, (*Tpasswd)(unsafe.Pointer(pwent)).Fpw_name))
+		libc.Xsprintf(tls, _username, __ccgo_ts+16094, libc.VaList(bp+8, (*Tpasswd)(unsafe.Pointer(pwent)).Fpw_name))
 		libc.Xputenv(tls, _username)
 		_logname = libc.Xmalloc(tls, libc.Xstrlen(tls, (*Tpasswd)(unsafe.Pointer(pwent)).Fpw_name)+uint64(9))
 		if !(_logname != 0) {
@@ -27268,7 +27250,7 @@ func _ChgUser(tls *libc.TLS, user uintptr) {
 			libc.Xfprintf(tls, XErrFp, __ccgo_ts+538, 0)
 			libshim.Xrem_exit(tls, int32(m_EXIT_FAILURE))
 		}
-		libc.Xsprintf(tls, _logname, __ccgo_ts+16112, libc.VaList(bp+8, (*Tpasswd)(unsafe.Pointer(pwent)).Fpw_name))
+		libc.Xsprintf(tls, _logname, __ccgo_ts+16102, libc.VaList(bp+8, (*Tpasswd)(unsafe.Pointer(pwent)).Fpw_name))
 		libc.Xputenv(tls, _logname)
 	}
 }
@@ -27291,7 +27273,7 @@ func _DefineFunction(tls *libc.TLS, str uintptr) {
 	r = XDoFset(tls, bp)
 	XDestroyParser(tls, bp)
 	if r != m_OK {
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16123, libc.VaList(bp+112, str, XGetErr(tls, r)))
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16113, libc.VaList(bp+112, str, XGetErr(tls, r)))
 	}
 }
 
@@ -27403,7 +27385,7 @@ func _AddTrustedUser(tls *libc.TLS, username uintptr) {
 	var pwent uintptr
 	_ = pwent
 	if XNumTrustedUsers >= int32(m_MAX_TRUSTED_USERS) {
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16142, libc.VaList(bp+8, int32(m_MAX_TRUSTED_USERS)))
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16132, libc.VaList(bp+8, int32(m_MAX_TRUSTED_USERS)))
 		libshim.Xrem_exit(tls, int32(m_EXIT_FAILURE))
 	}
 	pwent = libc.Xgetpwnam(tls, username)
@@ -27432,8 +27414,8 @@ func _ProcessLongOption(tls *libc.TLS, arg uintptr) {
 	defer tls.Free(48)
 	var _ /* t at bp+0 */ int32
 	var _ /* tt at bp+8 */ uint64
-	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16175) != 0) {
-		libc.Xfprintf(tls, libc.Xstderr, __ccgo_ts+16180, 0)
+	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16165) != 0) {
+		libc.Xfprintf(tls, libc.Xstderr, __ccgo_ts+16170, 0)
 		XTestMode = int32(1)
 		/* Update RealToday because of TestMode */
 		XRealToday = XSystemDate(tls, uintptr(unsafe.Pointer(&XCurYear)), uintptr(unsafe.Pointer(&XCurMon)), uintptr(unsafe.Pointer(&XCurDay)))
@@ -27442,45 +27424,45 @@ func _ProcessLongOption(tls *libc.TLS, arg uintptr) {
 		XFromDSE(tls, XDSEToday, uintptr(unsafe.Pointer(&XCurYear)), uintptr(unsafe.Pointer(&XCurMon)), uintptr(unsafe.Pointer(&XCurDay)))
 		return
 	}
-	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16332) != 0) {
+	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16322) != 0) {
 		XNoFormat = int32(1)
 		return
 	}
-	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16339) != 0) {
+	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16329) != 0) {
 		if XTodoFilter == int32(m_ONLY_EVENTS) {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+16350, 0)
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+16340, 0)
 			libshim.Xrem_exit(tls, int32(1))
 		}
 		XTodoFilter = int32(m_ONLY_TODOS)
 		return
 	}
-	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16405) != 0) {
+	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16395) != 0) {
 		if XTodoFilter == int32(m_ONLY_TODOS) {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+16350, 0)
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+16340, 0)
 			libshim.Xrem_exit(tls, int32(1))
 		}
 		XTodoFilter = int32(m_ONLY_EVENTS)
 		return
 	}
-	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16417) != 0) {
+	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16407) != 0) {
 		libc.Xsetvbuf(tls, libc.Xstdout, libc.UintptrFromInt32(0), int32(m__IONBF), uint64(0))
 		libc.Xsetvbuf(tls, libc.Xstderr, libc.UintptrFromInt32(0), int32(m__IONBF), uint64(0))
 		return
 	}
-	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16423) != 0) {
+	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16413) != 0) {
 		XJSONMode = int32(1)
 		XDontQueue = int32(1)
 		return
 	}
-	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+7700) != 0) {
-		libc.Xprintf(tls, __ccgo_ts+720, libc.VaList(bp+24, __ccgo_ts+7971))
+	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+7690) != 0) {
+		libc.Xprintf(tls, __ccgo_ts+720, libc.VaList(bp+24, __ccgo_ts+7961))
 		libshim.Xrem_exit(tls, m_EXIT_SUCCESS)
 	}
-	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16428) != 0) {
-		libc.Xprintf(tls, __ccgo_ts+720, libc.VaList(bp+24, __ccgo_ts+16445))
+	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16418) != 0) {
+		libc.Xprintf(tls, __ccgo_ts+720, libc.VaList(bp+24, __ccgo_ts+16435))
 		libshim.Xrem_exit(tls, m_EXIT_SUCCESS)
 	}
-	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16477) != 0) {
+	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16467) != 0) {
 		**(**int32)(__ccgo_up(bp)) = 0
 		for {
 			if !(**(**int32)(__ccgo_up(bp)) < XNumErrs) {
@@ -27497,27 +27479,27 @@ func _ProcessLongOption(tls *libc.TLS, arg uintptr) {
 		}
 		libshim.Xrem_exit(tls, m_EXIT_SUCCESS)
 	}
-	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16488) != 0) {
+	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16478) != 0) {
 		XHideCompletedTodos = int32(1)
 		return
 	}
-	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16509) != 0) {
+	if !(libc.Xstrcmp(tls, arg, __ccgo_ts+16499) != 0) {
 		Xprint_remind_tokens(tls)
 		Xprint_builtinfunc_tokens(tls)
 		Xprint_sysvar_tokens(tls)
 		libshim.Xrem_exit(tls, 0)
 	}
-	if libc.Xsscanf(tls, arg, __ccgo_ts+16522, libc.VaList(bp+24, bp+8)) == int32(1) {
+	if libc.Xsscanf(tls, arg, __ccgo_ts+16512, libc.VaList(bp+24, bp+8)) == int32(1) {
 		XExpressionNodeLimitPerLine = **(**uint64)(__ccgo_up(bp + 8))
 		return
 	}
-	if !(libc.Xstrncmp(tls, arg, __ccgo_ts+16546, uint64(5)) != 0) {
+	if !(libc.Xstrncmp(tls, arg, __ccgo_ts+16536, uint64(5)) != 0) {
 		if XInitialFile != 0 {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+16552, libc.VaList(bp+24, **(**uintptr)(__ccgo_up(XArgV))))
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+16542, libc.VaList(bp+24, **(**uintptr)(__ccgo_up(XArgV))))
 			return
 		}
 		if !(**(**uint8)(__ccgo_up(arg + 5)) != 0) {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+16605, libc.VaList(bp+24, **(**uintptr)(__ccgo_up(XArgV))))
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+16595, libc.VaList(bp+24, **(**uintptr)(__ccgo_up(XArgV))))
 			return
 		}
 		XInitialFile = arg + uintptr(5)
@@ -27526,9 +27508,9 @@ func _ProcessLongOption(tls *libc.TLS, arg uintptr) {
 		}
 		return
 	}
-	if libc.Xsscanf(tls, arg, __ccgo_ts+16637, libc.VaList(bp+24, bp)) == int32(1) {
+	if libc.Xsscanf(tls, arg, __ccgo_ts+16627, libc.VaList(bp+24, bp)) == int32(1) {
 		if **(**int32)(__ccgo_up(bp)) < 0 {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+16659, libc.VaList(bp+24, **(**uintptr)(__ccgo_up(XArgV))))
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+16649, libc.VaList(bp+24, **(**uintptr)(__ccgo_up(XArgV))))
 			return
 		}
 		if **(**int32)(__ccgo_up(bp)) > 0 {
@@ -27536,7 +27518,7 @@ func _ProcessLongOption(tls *libc.TLS, arg uintptr) {
 		}
 		return
 	}
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+16706, libc.VaList(bp+24, **(**uintptr)(__ccgo_up(XArgV)), arg))
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+16696, libc.VaList(bp+24, **(**uintptr)(__ccgo_up(XArgV)), arg))
 }
 
 func _guess_terminal_background(tls *libc.TLS, r uintptr, g uintptr, b uintptr) {
@@ -27558,7 +27540,7 @@ func _guess_terminal_background(tls *libc.TLS, r uintptr, g uintptr, b uintptr) 
 			return
 		}
 	}
-	ttyfd = libc.Xopen(tls, __ccgo_ts+9102, int32(m_O_RDWR1), 0)
+	ttyfd = libc.Xopen(tls, __ccgo_ts+9092, int32(m_O_RDWR1), 0)
 	if ttyfd < 0 {
 		return
 	}
@@ -27571,7 +27553,7 @@ func _guess_terminal_background(tls *libc.TLS, r uintptr, g uintptr, b uintptr) 
 		return
 	}
 	_tty_raw(tls, ttyfd)
-	n = int32(libc.Xwrite(tls, ttyfd, __ccgo_ts+16736, uint64(8)))
+	n = int32(libc.Xwrite(tls, ttyfd, __ccgo_ts+16726, uint64(8)))
 	if n != int32(8) {
 		/* write failed... WTF?  Not much we can do */
 		_tty_reset(tls, ttyfd)
@@ -27604,7 +27586,7 @@ func _guess_terminal_background(tls *libc.TLS, r uintptr, g uintptr, b uintptr) 
 		/* Too short */
 		return
 	}
-	if libc.Xsscanf(tls, bp+20+uintptr(5), __ccgo_ts+16745, libc.VaList(bp+160, bp+8, bp+12, bp+16)) != int32(3) {
+	if libc.Xsscanf(tls, bp+20+uintptr(5), __ccgo_ts+16735, libc.VaList(bp+160, bp+8, bp+12, bp+16)) != int32(3) {
 		/* Couldn't scan color codes */
 		return
 	}
@@ -27919,25 +27901,25 @@ func _exitfunc(tls *libc.TLS) {
 		libc.Xfflush(tls, libc.Xstdout)
 		libc.Xfflush(tls, XErrFp)
 		XDBufGetMallocStats(tls, bp, bp+8)
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16758, 0)
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16791, libc.VaList(bp+24, **(**Tsize_t)(__ccgo_up(bp)), **(**Tsize_t)(__ccgo_up(bp + 8))))
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16831, 0)
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16748, 0)
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16781, libc.VaList(bp+24, **(**Tsize_t)(__ccgo_up(bp)), **(**Tsize_t)(__ccgo_up(bp + 8))))
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16821, 0)
 		Xdump_var_hash_stats(tls)
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16865, 0)
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16855, 0)
 		Xdump_userfunc_hash_stats(tls)
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16899, 0)
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16889, 0)
 		Xdump_dedupe_hash_stats(tls)
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16931, 0)
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+16921, 0)
 		Xdump_translation_hash_stats(tls)
 		XUnsetAllUserFuncs(tls)
 		libc.Xfprintf(tls, XErrFp, __ccgo_ts+538, 0)
 		Xprint_expr_nodes_stats(tls)
 		if XMaxExprNodeFilename != 0 {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+16968, libc.VaList(bp+24, XMaxExprNodesPerLine, XMaxExprNodeFilename, XMaxExprNodeLineNo))
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+16958, libc.VaList(bp+24, XMaxExprNodesPerLine, XMaxExprNodeFilename, XMaxExprNodeLineNo))
 		} else {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+17010, libc.VaList(bp+24, XMaxExprNodesPerLine))
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+17000, libc.VaList(bp+24, XMaxExprNodesPerLine))
 		}
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+17044, libc.VaList(bp+24, XExpressionNodesEvaluated))
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+17034, libc.VaList(bp+24, XExpressionNodesEvaluated))
 	}
 }
 
@@ -27952,7 +27934,7 @@ func _sigxcpu(tls *libc.TLS, sig int32) {
 	var r int32
 	_ = r
 	_ = sig
-	r = int32(libc.Xwrite(tls, int32(m_STDERR_FILENO), __ccgo_ts+17078, uint64(32)))
+	r = int32(libc.Xwrite(tls, int32(m_STDERR_FILENO), __ccgo_ts+17068, uint64(32)))
 	/* Pretend to use r to avoid compiler warning */
 	/* cppcheck-suppress duplicateExpression */
 	/* cppcheck-suppress knownArgument */
@@ -28051,7 +28033,7 @@ func Xmain(tls *libc.TLS, argc int32, argv uintptr) (r int32) {
 					if XJSONLinesEmitted != 0 {
 						libc.Xprintf(tls, __ccgo_ts+2961, 0)
 					}
-					libc.Xprintf(tls, __ccgo_ts+17111, 0)
+					libc.Xprintf(tls, __ccgo_ts+17101, 0)
 					XPrintJSONString(tls, XGetErr(tls, int32(m_E_NOREMINDERS)))
 					libc.Xprintf(tls, __ccgo_ts+331, 0)
 					XJSONLinesEmitted = XJSONLinesEmitted + 1
@@ -28069,9 +28051,9 @@ func Xmain(tls *libc.TLS, argc int32, argv uintptr) (r int32) {
 		}
 		if XJSONMode != 0 {
 			if XJSONLinesEmitted != 0 {
-				libc.Xprintf(tls, __ccgo_ts+17128, 0)
+				libc.Xprintf(tls, __ccgo_ts+17118, 0)
 			}
-			libc.Xprintf(tls, __ccgo_ts+17131, 0)
+			libc.Xprintf(tls, __ccgo_ts+17121, 0)
 		}
 		/* If there are any background reminders queued up, handle them */
 		if XNumQueued != 0 || XDaemon != 0 {
@@ -28138,7 +28120,7 @@ func _DoReminders(tls *libc.TLS) {
 		}
 	}
 	if XFileAccessDate < 0 {
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+17134, libc.VaList(bp+136, XGetErr(tls, int32(m_E_CANTOPEN)), XInitialFile, libc.Xstrerror(tls, **(**int32)(__ccgo_up(libc.X__errno_location(tls))))))
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+17124, libc.VaList(bp+136, XGetErr(tls, int32(m_E_CANTOPEN)), XInitialFile, libc.Xstrerror(tls, **(**int32)(__ccgo_up(libc.X__errno_location(tls))))))
 		libshim.Xrem_exit(tls, int32(m_EXIT_FAILURE))
 	}
 	r = XIncludeFile(tls, XInitialFile)
@@ -28160,7 +28142,7 @@ func _DoReminders(tls *libc.TLS) {
 		if (**(**TToken)(__ccgo_up(bp))).Ftype1 != int32(_T_If) && (**(**TToken)(__ccgo_up(bp))).Ftype1 != int32(_T_Else) && (**(**TToken)(__ccgo_up(bp))).Ftype1 != int32(_T_EndIf) && (**(**TToken)(__ccgo_up(bp))).Ftype1 != int32(_T_IfTrig) && (**(**TToken)(__ccgo_up(bp))).Ftype1 != int32(_T_Set) && (**(**TToken)(__ccgo_up(bp))).Ftype1 != int32(_T_Fset) && Xshould_ignore_line(tls) != 0 {
 			/*** IGNORE THE LINE ***/
 			if XPurgeMode != 0 {
-				if libc.Xstrncmp(tls, XCurLine, __ccgo_ts+17149, uint64(3)) != 0 {
+				if libc.Xstrncmp(tls, XCurLine, __ccgo_ts+17139, uint64(3)) != 0 {
 					XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+136, XCurLine))
 				}
 			}
@@ -28172,7 +28154,7 @@ func _DoReminders(tls *libc.TLS) {
 			case int32(_T_Empty):
 				fallthrough
 			case int32(_T_Comment):
-				if !(libc.Xstrncmp(tls, XCurLine, __ccgo_ts+17149, uint64(3)) != 0) {
+				if !(libc.Xstrncmp(tls, XCurLine, __ccgo_ts+17139, uint64(3)) != 0) {
 					purge_handled = int32(1)
 				}
 			case int32(_T_Rem):
@@ -28292,7 +28274,7 @@ func _DoReminders(tls *libc.TLS) {
 				} else {
 					if r != 0 {
 						if !(XHush != 0) {
-							XPurgeEchoLine(tls, __ccgo_ts+17153, libc.VaList(bp+136, XGetErr(tls, r)))
+							XPurgeEchoLine(tls, __ccgo_ts+17143, libc.VaList(bp+136, XGetErr(tls, r)))
 						}
 						XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+136, XCurLine))
 					}
@@ -29121,9 +29103,9 @@ func _WprintHelper(tls *libc.TLS, fmt uintptr, argptr Tva_list) {
 	/* We can't use line_range because caller might have used it */
 	if fname != 0 {
 		if XLineNoStart == XLineNo {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+17189, libc.VaList(bp+8, fname, XLineNo))
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+17179, libc.VaList(bp+8, fname, XLineNo))
 		} else {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+17198, libc.VaList(bp+8, fname, XLineNoStart, XLineNo))
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+17188, libc.VaList(bp+8, fname, XLineNoStart, XLineNo))
 		}
 	}
 	libc.Xvfprintf(tls, XErrFp, fmt, argptr)
@@ -29202,12 +29184,12 @@ func XEprint(tls *libc.TLS, fmt uintptr, va uintptr) {
 	if XFreshLine != 0 {
 		/* We can't use line_range because caller might have used it */
 		if XLineNo == XLineNoStart {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+17189, libc.VaList(bp+8, fname, XLineNo))
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+17179, libc.VaList(bp+8, fname, XLineNo))
 		} else {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+17198, libc.VaList(bp+8, fname, XLineNoStart, XLineNo))
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+17188, libc.VaList(bp+8, fname, XLineNoStart, XLineNo))
 		}
 	} else {
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+17210, 0)
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+17200, 0)
 	}
 	argptr = va
 	libc.Xvfprintf(tls, XErrFp, fmt, argptr)
@@ -29369,10 +29351,10 @@ func _ReloadChangedLocaltime(tls *libc.TLS) {
 	bp := tls.Alloc(144)
 	defer tls.Free(144)
 	var _ /* sb at bp+0 */ Tstat
-	if libc.Xgetenv(tls, __ccgo_ts+8222) != 0 {
+	if libc.Xgetenv(tls, __ccgo_ts+8212) != 0 {
 		return
 	}
-	if libc.Xstat(tls, __ccgo_ts+17218, bp) != 0 {
+	if libc.Xstat(tls, __ccgo_ts+17208, bp) != 0 {
 		return
 	}
 	if _have_stat != 0 && (**(**Tstat)(__ccgo_up(bp))).Fst_dev == _prev.Fst_dev && (**(**Tstat)(__ccgo_up(bp))).Fst_ino == _prev.Fst_ino && (**(**Tstat)(__ccgo_up(bp))).Fst_mtim.Ftv_sec == _prev.Fst_mtim.Ftv_sec {
@@ -29380,7 +29362,7 @@ func _ReloadChangedLocaltime(tls *libc.TLS) {
 	}
 	_have_stat = int32(1)
 	_prev = **(**Tstat)(__ccgo_up(bp))
-	Xtz_set_tz(tls, __ccgo_ts+8225)
+	Xtz_set_tz(tls, __ccgo_ts+8215)
 	Xtz_set_tz(tls, libc.UintptrFromInt32(0))
 }
 
@@ -29505,8 +29487,8 @@ func XDoIf(tls *libc.TLS, p TParsePtr) (r1 int32) {
 			} else {
 				Xpush_if(tls, 0, libc.BoolInt32(!((*TParser)(unsafe.Pointer(p)).Fnonconst_expr != 0)))
 				if XPurgeMode != 0 && !(XHush != 0) {
-					XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+32, __ccgo_ts+17233))
-					XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+32, __ccgo_ts+17269))
+					XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+32, __ccgo_ts+17223))
+					XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+32, __ccgo_ts+17259))
 				}
 			}
 		}
@@ -29529,8 +29511,8 @@ func XDoElse(tls *libc.TLS, p TParsePtr) (r1 int32) {
 	was_ignoring = Xshould_ignore_line(tls)
 	r = Xencounter_else(tls)
 	if XPurgeMode != 0 && Xshould_ignore_line(tls) != 0 && !(was_ignoring != 0) && !(XHush != 0) {
-		XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+8, __ccgo_ts+17326))
-		XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+8, __ccgo_ts+17363))
+		XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+8, __ccgo_ts+17316))
+		XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+8, __ccgo_ts+17353))
 	}
 	if r != m_OK {
 		return r
@@ -29607,8 +29589,8 @@ func XDoIfTrig(tls *libc.TLS, p TParsePtr) (r int32) {
 			} else {
 				Xpush_if(tls, 0, 0)
 				if XPurgeMode != 0 && !(XHush != 0) {
-					XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+456, __ccgo_ts+17421))
-					XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+456, __ccgo_ts+17459))
+					XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+456, __ccgo_ts+17411))
+					XPurgeEchoLine(tls, __ccgo_ts+720, libc.VaList(bp+456, __ccgo_ts+17449))
 				}
 			}
 		}
@@ -29795,7 +29777,7 @@ func _DoDebug(tls *libc.TLS, p TParsePtr) (r int32) {
 				XDebugFlag = XDebugFlag & ^libc.Int32FromInt32(m_DB_SWITCH_ZONE3)
 			}
 		default:
-			if Xwarning_level(tls, __ccgo_ts+17520) != 0 {
+			if Xwarning_level(tls, __ccgo_ts+17510) != 0 {
 				XWprint(tls, XGetErr(tls, int32(m_M_BAD_DB_FLAG)), libc.VaList(bp+16, ch))
 			}
 			break
@@ -29893,12 +29875,12 @@ func XDoRun(tls *libc.TLS, p TParsePtr) (r1 int32) {
 		return r
 	}
 	/* Only allow RUN ON in top-level script */
-	if !(libc.Xstrcasecmp(tls, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer, __ccgo_ts+17529) != 0) {
+	if !(libc.Xstrcasecmp(tls, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer, __ccgo_ts+17519) != 0) {
 		if XTopLevel(tls) != 0 {
 			XRunDisabled = XRunDisabled & ^libc.Int32FromInt32(m_RUN_SCRIPT1)
 		}
 	} else {
-		if !(libc.Xstrcasecmp(tls, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer, __ccgo_ts+17532) != 0) {
+		if !(libc.Xstrcasecmp(tls, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer, __ccgo_ts+17522) != 0) {
 			XRunDisabled = XRunDisabled | int32(m_RUN_SCRIPT1)
 		} else {
 			XDBufFree(tls, bp)
@@ -29931,12 +29913,12 @@ func XDoExpr(tls *libc.TLS, p TParsePtr) (r1 int32) {
 		return r
 	}
 	/* Only allow EXPR ON in top-level script */
-	if !(libc.Xstrcasecmp(tls, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer, __ccgo_ts+17529) != 0) {
+	if !(libc.Xstrcasecmp(tls, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer, __ccgo_ts+17519) != 0) {
 		if XTopLevel(tls) != 0 {
 			XExpressionEvaluationDisabled = 0
 		}
 	} else {
-		if !(libc.Xstrcasecmp(tls, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer, __ccgo_ts+17532) != 0) {
+		if !(libc.Xstrcasecmp(tls, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer, __ccgo_ts+17522) != 0) {
 			XExpressionEvaluationDisabled = int32(1)
 		} else {
 			XDBufFree(tls, bp)
@@ -29982,10 +29964,10 @@ func XDoExit(tls *libc.TLS, p TParsePtr) {
 	}
 	if XJSONMode != 0 {
 		if XJSONLinesEmitted != 0 {
-			libc.Xprintf(tls, __ccgo_ts+17128, 0)
+			libc.Xprintf(tls, __ccgo_ts+17118, 0)
 		}
 		/* Close the reminder list */
-		libc.Xprintf(tls, __ccgo_ts+17131, 0)
+		libc.Xprintf(tls, __ccgo_ts+17121, 0)
 	}
 	libc.Xfflush(tls, libc.Xstdout)
 	libc.Xfflush(tls, libc.Xstderr)
@@ -30874,12 +30856,12 @@ func XSystem(tls *libc.TLS, cmd uintptr, is_queued int32) {
 				/* In the child */
 				libc.Xclose(tls, m_STDIN_FILENO)
 				libc.Xclose(tls, int32(m_STDOUT_FILENO))
-				fd = libc.Xopen(tls, __ccgo_ts+6442, m_O_RDONLY, 0)
+				fd = libc.Xopen(tls, __ccgo_ts+17526, m_O_RDONLY1, 0)
 				if fd >= 0 && fd != m_STDIN_FILENO {
 					libc.Xdup2(tls, fd, m_STDIN_FILENO)
 					libc.Xclose(tls, m_STDIN_FILENO)
 				}
-				fd = libc.Xopen(tls, __ccgo_ts+6442, int32(m_O_WRONLY1), 0)
+				fd = libc.Xopen(tls, __ccgo_ts+17526, int32(m_O_WRONLY1), 0)
 				if fd >= 0 && fd != int32(m_STDOUT_FILENO) {
 					libc.Xdup2(tls, fd, int32(m_STDOUT_FILENO))
 					libc.Xclose(tls, int32(m_STDOUT_FILENO))
@@ -33725,15 +33707,20 @@ func XQueueReminder(tls *libc.TLS, p TParsePtr, trig uintptr, tim uintptr, sched
 func _maybe_close(tls *libc.TLS, fd int32) {
 	var new_fd int32
 	_ = new_fd
+	/* Inside another Go program, descriptors 0, 1 and 2 belong to the
+	   host program. */
+	if libshim.Xrem_in_process(tls) != 0 {
+		return
+	}
 	/* Don't close descriptors connected to a TTY, except for stdin */
 	if fd != m_STDIN_FILENO && libc.Xisatty(tls, fd) != 0 {
 		return
 	}
 	libc.Xclose(tls, fd)
 	if fd != m_STDIN_FILENO {
-		new_fd = libc.Xopen(tls, __ccgo_ts+6442, int32(m_O_WRONLY1), 0)
+		new_fd = libc.Xopen(tls, __ccgo_ts+17526, int32(m_O_WRONLY1), 0)
 	} else {
-		new_fd = libc.Xopen(tls, __ccgo_ts+6442, m_O_RDONLY, 0)
+		new_fd = libc.Xopen(tls, __ccgo_ts+17526, m_O_RDONLY1, 0)
 	}
 	/* If the open failed... well... not much we can do */
 	if new_fd < 0 {
@@ -38244,6 +38231,7 @@ const m_ERR_TYPE11 = 0x0
 const m_INT_MAX10 = 2147483647
 const m_O_CLOEXEC2 = 02000000
 const m_O_NONBLOCK2 = 04000
+const m_O_RDONLY2 = 00
 const m_O_WRONLY2 = 01
 const m_S_IFDIR2 = 16384
 const m_S_IFMT2 = 61440
@@ -38285,64 +38273,16 @@ func _have_zoneinfo_dir(tls *libc.TLS) (r int32) {
 
 // C documentation
 //
-//	/* Call this instead of system() so if called ignores return code,
-//	   we don't get a compiler warning.  Also redirect stdin to /dev/null */
-func Xsystem1(tls *libc.TLS, cmd uintptr) (r1 int32) {
-	var devnull, r, stdin_dup int32
-	_, _, _ = devnull, r, stdin_dup
-	stdin_dup = libc.Xdup(tls, m_STDIN_FILENO)
-	if stdin_dup >= 0 {
-		devnull = libc.Xopen(tls, __ccgo_ts+6442, m_O_RDONLY, 0)
-		if devnull >= 0 {
-			if libc.Xdup2(tls, devnull, m_STDIN_FILENO) >= 0 {
-				Xset_cloexec(tls, stdin_dup)
-			}
-			libc.Xclose(tls, devnull)
-		} else {
-			libc.Xclose(tls, stdin_dup)
-			stdin_dup = -int32(1)
-		}
-	}
-	r = libc.Xsystem(tls, cmd)
-	if stdin_dup >= 0 {
-		libc.Xdup2(tls, stdin_dup, m_STDIN_FILENO)
-		libc.Xclose(tls, stdin_dup)
-	}
-	return r
+//	/* rem_system gives the command /dev/null as its standard input and writes
+//	   its output through the given streams, without changing descriptors 0
+//	   and 1, which belong to the host program when remind runs inside another
+//	   Go program. */
+func Xsystem1(tls *libc.TLS, cmd uintptr) (r int32) {
+	return libshim.Xrem_system(tls, cmd, libc.Xstdout, libc.Xstderr)
 }
 
-// C documentation
-//
-//	/***************************************************************/
-//	/*                                                             */
-//	/*  system_to_stderr                                           */
-//	/*                                                             */
-//	/*  Run system(...) but with stdout redirected to stderr       */
-//	/*                                                             */
-//	/***************************************************************/
-func Xsystem_to_stderr(tls *libc.TLS, cmd uintptr) (r1 int32) {
-	var r, stdout_dup int32
-	_, _ = r, stdout_dup
-	stdout_dup = libc.Xdup(tls, int32(m_STDOUT_FILENO))
-	if stdout_dup < 0 {
-		libc.Xperror(tls, __ccgo_ts+21796)
-		return -int32(1)
-	}
-	/* Duplicate STDERR onto STDOUT */
-	if libc.Xdup2(tls, int32(m_STDERR_FILENO), int32(m_STDOUT_FILENO)) < 0 {
-		libc.Xclose(tls, stdout_dup)
-		return -int32(1)
-	}
-	/* Set close-on-exec flag on stdout_dup */
-	Xset_cloexec(tls, stdout_dup)
-	r = Xsystem1(tls, cmd)
-	/* Restore original stdout */
-	/* If this dup2 fails... there's not a whole lot we can do. */
-	libc.Xdup2(tls, stdout_dup, int32(m_STDOUT_FILENO))
-	if int32(m_STDOUT_FILENO) != stdout_dup {
-		libc.Xclose(tls, stdout_dup)
-	}
-	return r
+func Xsystem_to_stderr(tls *libc.TLS, cmd uintptr) (r int32) {
+	return libshim.Xrem_system(tls, cmd, libc.Xstderr, libc.Xstderr)
 }
 
 // C documentation
@@ -38581,18 +38521,18 @@ func _print_callstack_aux(tls *libc.TLS, fp uintptr, entry uintptr) {
 	var in, prev uintptr
 	_, _, _ = i, in, prev
 	i = 0
-	in = Xtr(tls, __ccgo_ts+21800)
+	in = Xtr(tls, __ccgo_ts+21796)
 	prev = libc.UintptrFromInt32(0)
 	for entry != 0 {
 		if prev != 0 {
-			in = Xtr(tls, __ccgo_ts+21803)
+			in = Xtr(tls, __ccgo_ts+21799)
 		}
 		if !(prev != 0) || libc.Xstrcmp(tls, (*Tcs)(unsafe.Pointer(prev)).Ffunc1, (*Tcs)(unsafe.Pointer(entry)).Ffunc1) != 0 || libc.Xstrcmp(tls, (*Tcs)(unsafe.Pointer(prev)).Ffilename, (*Tcs)(unsafe.Pointer(entry)).Ffilename) != 0 || (*Tcs)(unsafe.Pointer(prev)).Flineno != (*Tcs)(unsafe.Pointer(entry)).Flineno {
 			if prev != 0 {
 				libc.Xfprintf(tls, fp, __ccgo_ts+538, 0)
 			}
-			libc.Xfprintf(tls, fp, __ccgo_ts+21815, 0)
-			libc.Xfprintf(tls, fp, Xtr(tls, __ccgo_ts+21820), libc.VaList(bp+8, (*Tcs)(unsafe.Pointer(entry)).Ffilename, Xline_range(tls, (*Tcs)(unsafe.Pointer(entry)).Flineno_start, (*Tcs)(unsafe.Pointer(entry)).Flineno), i, in, (*Tcs)(unsafe.Pointer(entry)).Ffunc1))
+			libc.Xfprintf(tls, fp, __ccgo_ts+21811, 0)
+			libc.Xfprintf(tls, fp, Xtr(tls, __ccgo_ts+21816), libc.VaList(bp+8, (*Tcs)(unsafe.Pointer(entry)).Ffilename, Xline_range(tls, (*Tcs)(unsafe.Pointer(entry)).Flineno_start, (*Tcs)(unsafe.Pointer(entry)).Flineno), i, in, (*Tcs)(unsafe.Pointer(entry)).Ffunc1))
 		}
 		prev = entry
 		entry = (*Tcs)(unsafe.Pointer(entry)).Fnext
@@ -38602,8 +38542,8 @@ func _print_callstack_aux(tls *libc.TLS, fp uintptr, entry uintptr) {
 		}
 	}
 	if entry != 0 {
-		libc.Xfprintf(tls, fp, __ccgo_ts+21851, 0)
-		libc.Xfprintf(tls, fp, __ccgo_ts+293, libc.VaList(bp+8, Xtr(tls, __ccgo_ts+21858)))
+		libc.Xfprintf(tls, fp, __ccgo_ts+21847, 0)
+		libc.Xfprintf(tls, fp, __ccgo_ts+293, libc.VaList(bp+8, Xtr(tls, __ccgo_ts+21854)))
 		libc.Xfprintf(tls, fp, __ccgo_ts+19337, 0)
 	}
 }
@@ -38632,7 +38572,7 @@ func Xline_range(tls *libc.TLS, lineno_start int32, lineno int32) (r uintptr) {
 	if lineno_start == lineno {
 		libc.X__builtin_snprintf(tls, uintptr(unsafe.Pointer(&_buf7)), uint64(128), __ccgo_ts+481, libc.VaList(bp+8, lineno))
 	} else {
-		libc.X__builtin_snprintf(tls, uintptr(unsafe.Pointer(&_buf7)), uint64(128), __ccgo_ts+21888, libc.VaList(bp+8, lineno_start, lineno))
+		libc.X__builtin_snprintf(tls, uintptr(unsafe.Pointer(&_buf7)), uint64(128), __ccgo_ts+21884, libc.VaList(bp+8, lineno_start, lineno))
 	}
 	return uintptr(unsafe.Pointer(&_buf7))
 }
@@ -38672,8 +38612,8 @@ func Xwarn_if_timezone_bad(tls *libc.TLS, tz uintptr) {
 	r = libc.Xstat(tls, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer, bp+56)
 	XDBufFree(tls, bp)
 	if r < 0 {
-		if Xwarning_level(tls, __ccgo_ts+21894) != 0 {
-			XWprint(tls, Xtr(tls, __ccgo_ts+21903), libc.VaList(bp+208, tz))
+		if Xwarning_level(tls, __ccgo_ts+21890) != 0 {
+			XWprint(tls, Xtr(tls, __ccgo_ts+21899), libc.VaList(bp+208, tz))
 		}
 	}
 }
@@ -38713,7 +38653,7 @@ func _VarCompareFunc(tls *libc.TLS, a uintptr, b uintptr) (r int32) {
 
 func XInitVars(tls *libc.TLS) {
 	if Xhash_table_init(tls, uintptr(unsafe.Pointer(&_VHashTbl)), uint64(libc.UintptrFromInt32(0)), __ccgo_fp(_VarHashFunc), __ccgo_fp(_VarCompareFunc)) < 0 {
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+21955, 0)
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+21951, 0)
 		libshim.Xrem_exit(tls, int32(1))
 	}
 }
@@ -38731,7 +38671,7 @@ func _strtod_in_c_locale(tls *libc.TLS, str uintptr, endptr uintptr) (r float64)
 		return libc.Xstrtod(tls, str, endptr)
 	}
 	/* Set locale to C */
-	libc.Xsetlocale(tls, int32(m_LC_NUMERIC), __ccgo_ts+22023)
+	libc.Xsetlocale(tls, int32(m_LC_NUMERIC), __ccgo_ts+22019)
 	x = libc.Xstrtod(tls, str, endptr)
 	/* Back to original locale */
 	libc.Xsetlocale(tls, int32(m_LC_NUMERIC), loc)
@@ -38739,7 +38679,7 @@ func _strtod_in_c_locale(tls *libc.TLS, str uintptr, endptr uintptr) (r float64)
 	if **(**uint8)(__ccgo_up(**(**uintptr)(__ccgo_up(endptr)))) != 0 {
 		x = libc.Xstrtod(tls, str, endptr)
 		if !(**(**uint8)(__ccgo_up(**(**uintptr)(__ccgo_up(endptr)))) != 0) {
-			XWprint(tls, Xtr(tls, __ccgo_ts+22025), libc.VaList(bp+8, str))
+			XWprint(tls, Xtr(tls, __ccgo_ts+22021), libc.VaList(bp+8, str))
 		}
 	}
 	return x
@@ -38749,7 +38689,7 @@ func _deprecated_var(tls *libc.TLS, var1 uintptr, instead uintptr) {
 	bp := tls.Alloc(32)
 	defer tls.Free(32)
 	if XDebugFlag&int32(m_DB_PRTLINE3) != 0 {
-		XWprint(tls, Xtr(tls, __ccgo_ts+22130), libc.VaList(bp+8, var1, instead))
+		XWprint(tls, Xtr(tls, __ccgo_ts+22126), libc.VaList(bp+8, var1, instead))
 	}
 }
 
@@ -38775,27 +38715,27 @@ func _latlong_component_func(tls *libc.TLS, do_set int32, val uintptr, var1 uint
 }
 
 func _latdeg_func(tls *libc.TLS, do_set int32, val uintptr) (r int32) {
-	return _latlong_component_func(tls, do_set, val, uintptr(unsafe.Pointer(&XLatDeg)), -int32(90), int32(90), __ccgo_ts+22163, __ccgo_ts+22171)
+	return _latlong_component_func(tls, do_set, val, uintptr(unsafe.Pointer(&XLatDeg)), -int32(90), int32(90), __ccgo_ts+22159, __ccgo_ts+22167)
 }
 
 func _latmin_func(tls *libc.TLS, do_set int32, val uintptr) (r int32) {
-	return _latlong_component_func(tls, do_set, val, uintptr(unsafe.Pointer(&XLatMin)), -int32(59), int32(59), __ccgo_ts+22181, __ccgo_ts+22171)
+	return _latlong_component_func(tls, do_set, val, uintptr(unsafe.Pointer(&XLatMin)), -int32(59), int32(59), __ccgo_ts+22177, __ccgo_ts+22167)
 }
 
 func _latsec_func(tls *libc.TLS, do_set int32, val uintptr) (r int32) {
-	return _latlong_component_func(tls, do_set, val, uintptr(unsafe.Pointer(&XLatSec)), -int32(59), int32(59), __ccgo_ts+22189, __ccgo_ts+22171)
+	return _latlong_component_func(tls, do_set, val, uintptr(unsafe.Pointer(&XLatSec)), -int32(59), int32(59), __ccgo_ts+22185, __ccgo_ts+22167)
 }
 
 func _longdeg_func(tls *libc.TLS, do_set int32, val uintptr) (r int32) {
-	return _latlong_component_func(tls, do_set, val, uintptr(unsafe.Pointer(&XLongDeg)), -int32(180), int32(180), __ccgo_ts+22197, __ccgo_ts+22206)
+	return _latlong_component_func(tls, do_set, val, uintptr(unsafe.Pointer(&XLongDeg)), -int32(180), int32(180), __ccgo_ts+22193, __ccgo_ts+22202)
 }
 
 func _longmin_func(tls *libc.TLS, do_set int32, val uintptr) (r int32) {
-	return _latlong_component_func(tls, do_set, val, uintptr(unsafe.Pointer(&XLongMin)), -int32(59), int32(59), __ccgo_ts+22217, __ccgo_ts+22206)
+	return _latlong_component_func(tls, do_set, val, uintptr(unsafe.Pointer(&XLongMin)), -int32(59), int32(59), __ccgo_ts+22213, __ccgo_ts+22202)
 }
 
 func _longsec_func(tls *libc.TLS, do_set int32, val uintptr) (r int32) {
-	return _latlong_component_func(tls, do_set, val, uintptr(unsafe.Pointer(&XLongSec)), -int32(59), int32(59), __ccgo_ts+22226, __ccgo_ts+22206)
+	return _latlong_component_func(tls, do_set, val, uintptr(unsafe.Pointer(&XLongSec)), -int32(59), int32(59), __ccgo_ts+22222, __ccgo_ts+22202)
 }
 
 func _latitude_longitude_func(tls *libc.TLS, do_set int32, val uintptr, var1 uintptr, min float64, max float64) (r int32) {
@@ -38810,9 +38750,9 @@ func _latitude_longitude_func(tls *libc.TLS, do_set int32, val uintptr, var1 uin
 	loc = libc.Xsetlocale(tls, int32(m_LC_NUMERIC), libc.UintptrFromInt32(0))
 	if !(do_set != 0) {
 		if loc != 0 {
-			libc.Xsetlocale(tls, int32(m_LC_NUMERIC), __ccgo_ts+22023)
+			libc.Xsetlocale(tls, int32(m_LC_NUMERIC), __ccgo_ts+22019)
 		}
-		libc.X__builtin_snprintf(tls, bp, uint64(64), __ccgo_ts+22235, libc.VaList(bp+80, **(**float64)(__ccgo_up(var1))))
+		libc.X__builtin_snprintf(tls, bp, uint64(64), __ccgo_ts+22231, libc.VaList(bp+80, **(**float64)(__ccgo_up(var1))))
 		if loc != 0 {
 			libc.Xsetlocale(tls, int32(m_LC_NUMERIC), loc)
 		}
@@ -38879,7 +38819,7 @@ func _warning_level_func(tls *libc.TLS, do_set int32, val uintptr) (r int32) {
 			libc.Xfree(tls, XWarningLevel)
 		}
 		/* If it's the same as VERSION, just leave it as NULL */
-		if !(libc.Xstrcmp(tls, *(*uintptr)(unsafe.Pointer(val + 16)), __ccgo_ts+7971) != 0) {
+		if !(libc.Xstrcmp(tls, *(*uintptr)(unsafe.Pointer(val + 16)), __ccgo_ts+7961) != 0) {
 			XWarningLevel = libc.UintptrFromInt32(0)
 		} else {
 			XWarningLevel = libc.Xstrdup(tls, *(*uintptr)(unsafe.Pointer(val + 16)))
@@ -38890,7 +38830,7 @@ func _warning_level_func(tls *libc.TLS, do_set int32, val uintptr) (r int32) {
 		return m_OK
 	}
 	if !(XWarningLevel != 0) {
-		*(*uintptr)(unsafe.Pointer(val + 16)) = libc.Xstrdup(tls, __ccgo_ts+7971)
+		*(*uintptr)(unsafe.Pointer(val + 16)) = libc.Xstrdup(tls, __ccgo_ts+7961)
 	} else {
 		*(*uintptr)(unsafe.Pointer(val + 16)) = libc.Xstrdup(tls, XWarningLevel)
 	}
@@ -38916,7 +38856,7 @@ func _oncefile_func(tls *libc.TLS, do_set int32, val uintptr) (r int32) {
 			return m_OK
 		}
 		if XProcessedOnce != 0 {
-			XWprint(tls, Xtr(tls, __ccgo_ts+22240), 0)
+			XWprint(tls, Xtr(tls, __ccgo_ts+22236), 0)
 			return m_OK
 		}
 		if XOnceFile != 0 {
@@ -39133,7 +39073,7 @@ func _datetime_sep_func(tls *libc.TLS, do_set int32, val uintptr) (r int32) {
 	if (*TValue)(unsafe.Pointer(val)).Ftype1 != int32(m_STR_TYPE10) {
 		return int32(m_E_BAD_TYPE)
 	}
-	if libc.Xstrcmp(tls, *(*uintptr)(unsafe.Pointer(val + 16)), __ccgo_ts+2500) != 0 && libc.Xstrcmp(tls, *(*uintptr)(unsafe.Pointer(val + 16)), __ccgo_ts+22311) != 0 {
+	if libc.Xstrcmp(tls, *(*uintptr)(unsafe.Pointer(val + 16)), __ccgo_ts+2500) != 0 && libc.Xstrcmp(tls, *(*uintptr)(unsafe.Pointer(val + 16)), __ccgo_ts+22307) != 0 {
 		return int32(m_E_BAD_VAL_FOR_SYSVAR)
 	}
 	XDateTimeSep = **(**uint8)(__ccgo_up(*(*uintptr)(unsafe.Pointer(val + 16))))
@@ -39254,7 +39194,7 @@ func _time_sep_func(tls *libc.TLS, do_set int32, val uintptr) (r int32) {
 	if (*TValue)(unsafe.Pointer(val)).Ftype1 != int32(m_STR_TYPE10) {
 		return int32(m_E_BAD_TYPE)
 	}
-	if libc.Xstrcmp(tls, *(*uintptr)(unsafe.Pointer(val + 16)), __ccgo_ts+20948) != 0 && libc.Xstrcmp(tls, *(*uintptr)(unsafe.Pointer(val + 16)), __ccgo_ts+8157) != 0 {
+	if libc.Xstrcmp(tls, *(*uintptr)(unsafe.Pointer(val + 16)), __ccgo_ts+20948) != 0 && libc.Xstrcmp(tls, *(*uintptr)(unsafe.Pointer(val + 16)), __ccgo_ts+8147) != 0 {
 		return int32(m_E_BAD_VAL_FOR_SYSVAR)
 	}
 	XTimeSep = **(**uint8)(__ccgo_up(*(*uintptr)(unsafe.Pointer(val + 16))))
@@ -39346,7 +39286,7 @@ func _DeleteVar(tls *libc.TLS, str uintptr) (r int32) {
 		return int32(m_E_NOSUCH_VAR)
 	}
 	if XDebugFlag&int32(m_DB_UNUSED_VARS3) != 0 && !((*TVar)(unsafe.Pointer(v)).Fused_since_set != 0) {
-		XEprint(tls, Xtr(tls, __ccgo_ts+22313), libc.VaList(bp+8, str, (*TVar)(unsafe.Pointer(v)).Ffilename, (*TVar)(unsafe.Pointer(v)).Flineno))
+		XEprint(tls, Xtr(tls, __ccgo_ts+22309), libc.VaList(bp+8, str, (*TVar)(unsafe.Pointer(v)).Ffilename, (*TVar)(unsafe.Pointer(v)).Flineno))
 	}
 	if (*TVar)(unsafe.Pointer(v)).Fv.Ftype1 == int32(m_STR_TYPE10) && *(*uintptr)(unsafe.Pointer(v + 104 + 16)) != 0 {
 		libc.Xfree(tls, *(*uintptr)(unsafe.Pointer(v + 104 + 16)))
@@ -39375,7 +39315,7 @@ func XSetVar(tls *libc.TLS, str uintptr, val uintptr, nonconst_expr int32) (r in
 	if XDebugFlag&int32(m_DB_UNUSED_VARS3) != 0 {
 		v = XFindVar(tls, str, 0)
 		if v != 0 && !((*TVar)(unsafe.Pointer(v)).Fused_since_set != 0) {
-			XEprint(tls, Xtr(tls, __ccgo_ts+22365), libc.VaList(bp+8, str, (*TVar)(unsafe.Pointer(v)).Ffilename, (*TVar)(unsafe.Pointer(v)).Flineno))
+			XEprint(tls, Xtr(tls, __ccgo_ts+22361), libc.VaList(bp+8, str, (*TVar)(unsafe.Pointer(v)).Ffilename, (*TVar)(unsafe.Pointer(v)).Flineno))
 		}
 	}
 	if !(v != 0) {
@@ -39435,7 +39375,7 @@ func XDoSet(tls *libc.TLS, p uintptr) (r int32) {
 		var1 = XFindVar(tls, (*TDynamicBuffer)(unsafe.Pointer(bp+32)).Fbuffer, 0)
 		if var1 != 0 {
 			if XDebugFlag&int32(m_DB_NONCONST11) != 0 && !!((*TVar)(unsafe.Pointer(var1)).Fis_constant != 0) {
-				XWprint(tls, Xtr(tls, __ccgo_ts+22418), 0)
+				XWprint(tls, Xtr(tls, __ccgo_ts+22414), 0)
 			}
 			(*TVar)(unsafe.Pointer(var1)).Fis_constant = uint8(0)
 		}
@@ -39454,7 +39394,7 @@ func XDoSet(tls *libc.TLS, p uintptr) (r int32) {
 		}
 	}
 	if (*TParser)(unsafe.Pointer(p)).Fisnested != 0 {
-		XEprint(tls, __ccgo_ts+293, libc.VaList(bp+152, Xtr(tls, __ccgo_ts+22491)))
+		XEprint(tls, __ccgo_ts+293, libc.VaList(bp+152, Xtr(tls, __ccgo_ts+22487)))
 		return int32(m_E_CANTNEST_FDEF)
 	}
 	(*TParser)(unsafe.Pointer(p)).Fnonconst_expr = uint8(0)
@@ -39487,12 +39427,12 @@ func XDoSet(tls *libc.TLS, p uintptr) (r int32) {
 		}
 		if XDebugFlag&int32(m_DB_NONCONST11) != 0 {
 			if !(Xin_constant_context(tls) != 0) && !((*TParser)(unsafe.Pointer(p)).Fnonconst_expr != 0) {
-				XWprint(tls, Xtr(tls, __ccgo_ts+22538), 0)
+				XWprint(tls, Xtr(tls, __ccgo_ts+22534), 0)
 			}
 		}
 	}
 	if (**(**TDynamicBuffer)(__ccgo_up(bp + 32))).Flen1 > uint64(m_VAR_NAME_LEN) {
-		XWprint(tls, Xtr(tls, __ccgo_ts+22601), libc.VaList(bp+152, int32(m_VAR_NAME_LEN), (*TDynamicBuffer)(unsafe.Pointer(bp+32)).Fbuffer, int32(m_VAR_NAME_LEN), (*TDynamicBuffer)(unsafe.Pointer(bp+32)).Fbuffer))
+		XWprint(tls, Xtr(tls, __ccgo_ts+22597), libc.VaList(bp+152, int32(m_VAR_NAME_LEN), (*TDynamicBuffer)(unsafe.Pointer(bp+32)).Fbuffer, int32(m_VAR_NAME_LEN), (*TDynamicBuffer)(unsafe.Pointer(bp+32)).Fbuffer))
 	}
 	XDBufFree(tls, bp+32)
 	return **(**int32)(__ccgo_up(bp + 24))
@@ -39564,7 +39504,7 @@ func XDoDump(tls *libc.TLS, p TParsePtr) (r1 int32) {
 	if r != 0 {
 		return r
 	}
-	if !(libc.Xstrcmp(tls, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer, __ccgo_ts+22654) != 0) {
+	if !(libc.Xstrcmp(tls, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer, __ccgo_ts+22650) != 0) {
 		dump_constness = int32(1)
 		XDBufFree(tls, bp)
 		XDBufInit(tls, bp)
@@ -39578,7 +39518,7 @@ func XDoDump(tls *libc.TLS, p TParsePtr) (r1 int32) {
 		XDumpVarTable(tls, dump_constness)
 		return m_OK
 	}
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+22657, libc.VaList(bp+64, XGetErr(tls, int32(m_E_VAR)), XGetErr(tls, int32(m_E_VAL))))
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+22653, libc.VaList(bp+64, XGetErr(tls, int32(m_E_VAR)), XGetErr(tls, int32(m_E_VAL))))
 	for int32(1) != 0 {
 		if libc.Int32FromUint8(**(**uint8)(__ccgo_up((*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer))) == int32('$') {
 			XDumpSysVarByName(tls, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer+uintptr(1))
@@ -39589,16 +39529,16 @@ func XDoDump(tls *libc.TLS, p TParsePtr) (r1 int32) {
 					/* Truncate over-long variable name */
 					**(**uint8)(__ccgo_up((*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer + 64)) = uint8(0)
 				}
-				libc.Xfprintf(tls, XErrFp, __ccgo_ts+22666, libc.VaList(bp+64, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer, XGetErr(tls, int32(m_E_UNDEF))))
+				libc.Xfprintf(tls, XErrFp, __ccgo_ts+22662, libc.VaList(bp+64, (*TDynamicBuffer)(unsafe.Pointer(bp)).Fbuffer, XGetErr(tls, int32(m_E_UNDEF))))
 			} else {
-				libc.Xfprintf(tls, XErrFp, __ccgo_ts+22674, libc.VaList(bp+64, v+16))
+				libc.Xfprintf(tls, XErrFp, __ccgo_ts+22670, libc.VaList(bp+64, v+16))
 				XPrintValue(tls, v+104, XErrFp)
 				if (*TVar)(unsafe.Pointer(v)).Fpreserve != 0 {
-					libc.Xfprintf(tls, XErrFp, __ccgo_ts+22679, 0)
+					libc.Xfprintf(tls, XErrFp, __ccgo_ts+22675, 0)
 				}
 				if dump_constness != 0 {
 					if (*TVar)(unsafe.Pointer(v)).Fis_constant != 0 {
-						libc.Xfprintf(tls, XErrFp, __ccgo_ts+22692, 0)
+						libc.Xfprintf(tls, XErrFp, __ccgo_ts+22688, 0)
 					}
 				}
 				libc.Xfprintf(tls, XErrFp, __ccgo_ts+538, 0)
@@ -39630,20 +39570,20 @@ func XDumpVarTable(tls *libc.TLS, dump_constness int32) {
 	defer tls.Free(32)
 	var v uintptr
 	_ = v
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+22657, libc.VaList(bp+8, XGetErr(tls, int32(m_E_VAR)), XGetErr(tls, int32(m_E_VAL))))
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+22653, libc.VaList(bp+8, XGetErr(tls, int32(m_E_VAR)), XGetErr(tls, int32(m_E_VAL))))
 	v = Xhash_table_next(tls, uintptr(unsafe.Pointer(&_VHashTbl)), libc.UintptrFromInt32(0))
 	for {
 		if !(v != 0) {
 			break
 		}
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+22674, libc.VaList(bp+8, v+16))
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+22670, libc.VaList(bp+8, v+16))
 		XPrintValue(tls, v+104, XErrFp)
 		if (*TVar)(unsafe.Pointer(v)).Fpreserve != 0 {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+22679, 0)
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+22675, 0)
 		}
 		if dump_constness != 0 {
 			if (*TVar)(unsafe.Pointer(v)).Fis_constant != 0 {
-				libc.Xfprintf(tls, XErrFp, __ccgo_ts+22692, 0)
+				libc.Xfprintf(tls, XErrFp, __ccgo_ts+22688, 0)
 			}
 		}
 		libc.Xfprintf(tls, XErrFp, __ccgo_ts+538, 0)
@@ -39670,10 +39610,10 @@ func XDumpUnusedVars(tls *libc.TLS) {
 			goto _1
 		}
 		if !(done_header != 0) {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+720, libc.VaList(bp+8, Xtr(tls, __ccgo_ts+22701)))
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+720, libc.VaList(bp+8, Xtr(tls, __ccgo_ts+22697)))
 			done_header = int32(1)
 		}
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+22762, libc.VaList(bp+8, v+16, Xtr(tls, __ccgo_ts+22778), (*TVar)(unsafe.Pointer(v)).Ffilename, (*TVar)(unsafe.Pointer(v)).Flineno))
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+22758, libc.VaList(bp+8, v+16, Xtr(tls, __ccgo_ts+22774), (*TVar)(unsafe.Pointer(v)).Ffilename, (*TVar)(unsafe.Pointer(v)).Flineno))
 		goto _1
 	_1:
 		;
@@ -39800,183 +39740,183 @@ func XDoPreserve(tls *libc.TLS, p uintptr) (r1 int32) {
 //	/* All of the system variables sorted alphabetically */
 var _SysVarArr = [127]TSysVar{
 	0: {
-		Fname:       __ccgo_ts + 22789,
+		Fname:       __ccgo_ts + 22785,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XAddBlankLines)),
 		Fmax:        int32(1),
 	},
 	1: {
-		Fname:       __ccgo_ts + 22803,
+		Fname:       __ccgo_ts + 22799,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 4171,
 	},
 	2: {
-		Fname:       __ccgo_ts + 22807,
+		Fname:       __ccgo_ts + 22803,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 1805,
 	},
 	3: {
-		Fname:       __ccgo_ts + 22810,
+		Fname:       __ccgo_ts + 22806,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 5002,
 	},
 	4: {
-		Fname:       __ccgo_ts + 12285,
+		Fname:       __ccgo_ts + 12379,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12285,
+		Fvalue:      __ccgo_ts + 12379,
 	},
 	5: {
-		Fname:       __ccgo_ts + 22814,
+		Fname:       __ccgo_ts + 22810,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 5089,
 	},
 	6: {
-		Fname:       __ccgo_ts + 12305,
+		Fname:       __ccgo_ts + 12399,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12305,
+		Fvalue:      __ccgo_ts + 12399,
 	},
 	7: {
-		Fname:       __ccgo_ts + 22817,
+		Fname:       __ccgo_ts + 22813,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XCalculateUTC)),
 		Fmax:        int32(1),
 	},
 	8: {
-		Fname:  __ccgo_ts + 22825,
+		Fname:  __ccgo_ts + 22821,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XDoCalendar)),
 	},
 	9: {
-		Fname:  __ccgo_ts + 22833,
+		Fname:  __ccgo_ts + 22829,
 		Ftype1: int32(m_STR_TYPE10),
 		Fvalue: uintptr(unsafe.Pointer(&XCalType)),
 	},
 	10: {
-		Fname:  __ccgo_ts + 22841,
+		Fname:  __ccgo_ts + 22837,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XDaemon)),
 	},
 	11: {
-		Fname:       __ccgo_ts + 22848,
+		Fname:       __ccgo_ts + 22844,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	12: {
-		Fname:       __ccgo_ts + 22856,
+		Fname:       __ccgo_ts + 22852,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	13: {
-		Fname:       __ccgo_ts + 12339,
+		Fname:       __ccgo_ts + 12433,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12339,
+		Fvalue:      __ccgo_ts + 12433,
 	},
 	14: {
-		Fname:       __ccgo_ts + 22868,
+		Fname:       __ccgo_ts + 22864,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XDedupeReminders)),
 		Fmax:        int32(1),
 	},
 	15: {
-		Fname:       __ccgo_ts + 22884,
+		Fname:       __ccgo_ts + 22880,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	16: {
-		Fname:       __ccgo_ts + 22897,
+		Fname:       __ccgo_ts + 22893,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	17: {
-		Fname:       __ccgo_ts + 22911,
+		Fname:       __ccgo_ts + 22907,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XDefaultDelta)),
 		Fmax:        int32(10000),
 	},
 	18: {
-		Fname:       __ccgo_ts + 22924,
+		Fname:       __ccgo_ts + 22920,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XDefaultPrio)),
 		Fmax:        int32(9999),
 	},
 	19: {
-		Fname:       __ccgo_ts + 22936,
+		Fname:       __ccgo_ts + 22932,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XDefaultTDelta)),
 		Fmax:        int32(m_MINUTES_PER_DAY),
 	},
 	20: {
-		Fname:  __ccgo_ts + 22950,
+		Fname:  __ccgo_ts + 22946,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XDeltaOverride)),
 	},
 	21: {
-		Fname:  __ccgo_ts + 22964,
+		Fname:  __ccgo_ts + 22960,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XDontFork)),
 	},
 	22: {
-		Fname:  __ccgo_ts + 22973,
+		Fname:  __ccgo_ts + 22969,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XDontQueue)),
 	},
 	23: {
-		Fname:  __ccgo_ts + 22983,
+		Fname:  __ccgo_ts + 22979,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XDontIssueAts)),
 	},
 	24: {
-		Fname:       __ccgo_ts + 22995,
+		Fname:       __ccgo_ts + 22991,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_STR_TYPE10),
 		Fvalue:      uintptr(unsafe.Pointer(&XEndSent)),
 	},
 	25: {
-		Fname:       __ccgo_ts + 23003,
+		Fname:       __ccgo_ts + 22999,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_STR_TYPE10),
 		Fvalue:      uintptr(unsafe.Pointer(&XEndSentIg)),
 	},
 	26: {
-		Fname:       __ccgo_ts + 23013,
+		Fname:       __ccgo_ts + 23009,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	27: {
-		Fname:       __ccgo_ts + 12270,
+		Fname:       __ccgo_ts + 12364,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12270,
+		Fvalue:      __ccgo_ts + 12364,
 	},
 	28: {
-		Fname:       __ccgo_ts + 23033,
+		Fname:       __ccgo_ts + 23029,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XFirstIndent)),
 		Fmax:        int32(132),
 	},
 	29: {
-		Fname:       __ccgo_ts + 23045,
+		Fname:       __ccgo_ts + 23041,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XFoldYear)),
 		Fmax:        int32(1),
 	},
 	30: {
-		Fname:       __ccgo_ts + 23054,
+		Fname:       __ccgo_ts + 23050,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XFormWidth)),
@@ -39984,180 +39924,180 @@ var _SysVarArr = [127]TSysVar{
 		Fmax:        int32(500),
 	},
 	31: {
-		Fname:       __ccgo_ts + 12405,
+		Fname:       __ccgo_ts + 12305,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12405,
+		Fvalue:      __ccgo_ts + 12305,
 	},
 	32: {
-		Fname:       __ccgo_ts + 23064,
+		Fname:       __ccgo_ts + 23060,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 4175,
 	},
 	33: {
-		Fname:  __ccgo_ts + 23072,
+		Fname:  __ccgo_ts + 23068,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XHideCompletedTodos)),
 	},
 	34: {
-		Fname:       __ccgo_ts + 23091,
+		Fname:       __ccgo_ts + 23087,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 4975,
 	},
 	35: {
-		Fname:       __ccgo_ts + 23096,
+		Fname:       __ccgo_ts + 23092,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_STR_TYPE10),
 		Fvalue:      uintptr(unsafe.Pointer(&XDynamicHplu)),
 	},
 	36: {
-		Fname:  __ccgo_ts + 23101,
+		Fname:  __ccgo_ts + 23097,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XHush)),
 	},
 	37: {
-		Fname:  __ccgo_ts + 23110,
+		Fname:  __ccgo_ts + 23106,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XIgnoreOnce)),
 	},
 	38: {
-		Fname:  __ccgo_ts + 23121,
+		Fname:  __ccgo_ts + 23117,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XInfiniteDelta)),
 	},
 	39: {
-		Fname:  __ccgo_ts + 23130,
+		Fname:  __ccgo_ts + 23126,
 		Ftype1: int32(m_CONST_INT_TYPE3),
 		Fmin:   int32(m_INT_MAX10),
 	},
 	40: {
-		Fname:  __ccgo_ts + 23137,
+		Fname:  __ccgo_ts + 23133,
 		Ftype1: int32(m_CONST_INT_TYPE3),
 		Fmin:   -libc.Int32FromInt32(1) - libc.Int32FromInt32(0x7fffffff),
 	},
 	41: {
-		Fname:       __ccgo_ts + 23144,
+		Fname:       __ccgo_ts + 23140,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 5092,
 	},
 	42: {
-		Fname:       __ccgo_ts + 12262,
+		Fname:       __ccgo_ts + 12356,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12262,
+		Fvalue:      __ccgo_ts + 12356,
 	},
 	43: {
-		Fname:  __ccgo_ts + 23147,
+		Fname:  __ccgo_ts + 23143,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XJSONMode)),
 	},
 	44: {
-		Fname:       __ccgo_ts + 12300,
+		Fname:       __ccgo_ts + 12394,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12300,
+		Fvalue:      __ccgo_ts + 12394,
 	},
 	45: {
-		Fname:       __ccgo_ts + 12295,
+		Fname:       __ccgo_ts + 12389,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12295,
+		Fvalue:      __ccgo_ts + 12389,
 	},
 	46: {
-		Fname:       __ccgo_ts + 23156,
+		Fname:       __ccgo_ts + 23152,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	47: {
-		Fname:       __ccgo_ts + 23163,
+		Fname:       __ccgo_ts + 23159,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	48: {
-		Fname:       __ccgo_ts + 23172,
+		Fname:       __ccgo_ts + 23168,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	49: {
-		Fname:       __ccgo_ts + 23179,
+		Fname:       __ccgo_ts + 23175,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	50: {
-		Fname:       __ccgo_ts + 23186,
+		Fname:       __ccgo_ts + 23182,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_STR_TYPE10),
 		Fvalue:      uintptr(unsafe.Pointer(&XLocation)),
 	},
 	51: {
-		Fname:       __ccgo_ts + 23195,
+		Fname:       __ccgo_ts + 23191,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	52: {
-		Fname:       __ccgo_ts + 23203,
+		Fname:       __ccgo_ts + 23199,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	53: {
-		Fname:       __ccgo_ts + 23213,
+		Fname:       __ccgo_ts + 23209,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	54: {
-		Fname:       __ccgo_ts + 23221,
+		Fname:       __ccgo_ts + 23217,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	55: {
-		Fname:       __ccgo_ts + 12279,
+		Fname:       __ccgo_ts + 12373,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12279,
+		Fvalue:      __ccgo_ts + 12373,
 	},
 	56: {
-		Fname:       __ccgo_ts + 23229,
+		Fname:       __ccgo_ts + 23225,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XMaxCachedLines)),
 		Fmax:        int32(m_INT_MAX10),
 	},
 	57: {
-		Fname:  __ccgo_ts + 23244,
+		Fname:  __ccgo_ts + 23240,
 		Ftype1: int32(m_CONST_INT_TYPE3),
 		Fmin:   int32(m_MAX_FULL_OMITS),
 	},
 	58: {
-		Fname:       __ccgo_ts + 23257,
+		Fname:       __ccgo_ts + 23253,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XMaxIncludeCmdLines)),
 		Fmax:        int32(m_INT_MAX10),
 	},
 	59: {
-		Fname:       __ccgo_ts + 23276,
+		Fname:       __ccgo_ts + 23272,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XMaxLateMinutes)),
 		Fmax:        int32(m_MINUTES_PER_DAY),
 	},
 	60: {
-		Fname:       __ccgo_ts + 23291,
+		Fname:       __ccgo_ts + 23287,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XMaxLineLength)),
 		Fmax:        int32(m_INT_MAX10),
 	},
 	61: {
-		Fname:  __ccgo_ts + 23305,
+		Fname:  __ccgo_ts + 23301,
 		Ftype1: int32(m_CONST_INT_TYPE3),
 		Fmin:   int32(m_MAX_PARTIAL_OMITS),
 	},
 	62: {
-		Fname:       __ccgo_ts + 23321,
+		Fname:       __ccgo_ts + 23317,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XMaxSatIter)),
@@ -40165,7 +40105,7 @@ var _SysVarArr = [127]TSysVar{
 		Fmax:        int32(m_INT_MAX10),
 	},
 	63: {
-		Fname:       __ccgo_ts + 23332,
+		Fname:       __ccgo_ts + 23328,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XMaxStringLen)),
@@ -40173,13 +40113,13 @@ var _SysVarArr = [127]TSysVar{
 		Fmax:        int32(m_INT_MAX10),
 	},
 	64: {
-		Fname:       __ccgo_ts + 12291,
+		Fname:       __ccgo_ts + 12385,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12291,
+		Fvalue:      __ccgo_ts + 12385,
 	},
 	65: {
-		Fname:       __ccgo_ts + 23345,
+		Fname:       __ccgo_ts + 23341,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XMinsFromUTC)),
@@ -40187,176 +40127,176 @@ var _SysVarArr = [127]TSysVar{
 		Fmax:        int32(780),
 	},
 	66: {
-		Fname:       __ccgo_ts + 23357,
+		Fname:       __ccgo_ts + 23353,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 4968,
 	},
 	67: {
-		Fname:       __ccgo_ts + 12371,
+		Fname:       __ccgo_ts + 12271,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12371,
+		Fvalue:      __ccgo_ts + 12271,
 	},
 	68: {
-		Fname:       __ccgo_ts + 23364,
+		Fname:       __ccgo_ts + 23360,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_STR_TYPE10),
 		Fvalue:      uintptr(unsafe.Pointer(&XDynamicMplu)),
 	},
 	69: {
-		Fname:  __ccgo_ts + 23369,
+		Fname:  __ccgo_ts + 23365,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XNextMode)),
 	},
 	70: {
-		Fname:       __ccgo_ts + 12330,
+		Fname:       __ccgo_ts + 12424,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12330,
+		Fvalue:      __ccgo_ts + 12424,
 	},
 	71: {
-		Fname:       __ccgo_ts + 23378,
+		Fname:       __ccgo_ts + 23374,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 4953,
 	},
 	72: {
-		Fname:  __ccgo_ts + 23382,
+		Fname:  __ccgo_ts + 23378,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XNumFullOmits)),
 	},
 	73: {
-		Fname:  __ccgo_ts + 23395,
+		Fname:  __ccgo_ts + 23391,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XNumPartialOmits)),
 	},
 	74: {
-		Fname:  __ccgo_ts + 23411,
+		Fname:  __ccgo_ts + 23407,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XNumQueued)),
 	},
 	75: {
-		Fname:  __ccgo_ts + 23421,
+		Fname:  __ccgo_ts + 23417,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XNumTriggered)),
 	},
 	76: {
-		Fname:       __ccgo_ts + 12322,
+		Fname:       __ccgo_ts + 12416,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12322,
+		Fvalue:      __ccgo_ts + 12416,
 	},
 	77: {
-		Fname:       __ccgo_ts + 23429,
+		Fname:       __ccgo_ts + 23425,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 4622,
 	},
 	78: {
-		Fname:       __ccgo_ts + 23432,
+		Fname:       __ccgo_ts + 23428,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	79: {
-		Fname:       __ccgo_ts + 23441,
+		Fname:       __ccgo_ts + 23437,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XParseUntriggered)),
 		Fmax:        int32(1),
 	},
 	80: {
-		Fname:       __ccgo_ts + 23458,
+		Fname:       __ccgo_ts + 23454,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 1802,
 	},
 	81: {
-		Fname:  __ccgo_ts + 23461,
+		Fname:  __ccgo_ts + 23457,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XDoPrefixLineNo)),
 	},
 	82: {
-		Fname:  __ccgo_ts + 23474,
+		Fname:  __ccgo_ts + 23470,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XPsCal)),
 	},
 	83: {
-		Fname:  __ccgo_ts + 23480,
+		Fname:  __ccgo_ts + 23476,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XOrigIterations)),
 	},
 	84: {
-		Fname:  __ccgo_ts + 23487,
+		Fname:  __ccgo_ts + 23483,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XRunDisabled)),
 	},
 	85: {
-		Fname:       __ccgo_ts + 12412,
-		Fmodifiable: uint8(1),
-		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12412,
-	},
-	86: {
 		Fname:       __ccgo_ts + 12312,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 12312,
 	},
+	86: {
+		Fname:       __ccgo_ts + 12406,
+		Fmodifiable: uint8(1),
+		Ftype1:      int32(m_TRANS_TYPE1),
+		Fvalue:      __ccgo_ts + 12406,
+	},
 	87: {
-		Fname:  __ccgo_ts + 23494,
+		Fname:  __ccgo_ts + 23490,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XShaded)),
 	},
 	88: {
-		Fname:  __ccgo_ts + 23501,
+		Fname:  __ccgo_ts + 23497,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XDoSimpleCalendar)),
 	},
 	89: {
-		Fname:  __ccgo_ts + 23511,
+		Fname:  __ccgo_ts + 23507,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XSortByDate)),
 	},
 	90: {
-		Fname:  __ccgo_ts + 23522,
+		Fname:  __ccgo_ts + 23518,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XSortByPrio)),
 	},
 	91: {
-		Fname:  __ccgo_ts + 23533,
+		Fname:  __ccgo_ts + 23529,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XSortByTime)),
 	},
 	92: {
-		Fname:       __ccgo_ts + 23544,
+		Fname:       __ccgo_ts + 23540,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XSubsIndent)),
 		Fmax:        int32(132),
 	},
 	93: {
-		Fname:       __ccgo_ts + 12421,
+		Fname:       __ccgo_ts + 12321,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12421,
+		Fvalue:      __ccgo_ts + 12321,
 	},
 	94: {
-		Fname:       __ccgo_ts + 23555,
+		Fname:       __ccgo_ts + 23551,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XSuppressImplicitRemWarnings)),
 		Fmax:        int32(1),
 	},
 	95: {
-		Fname:       __ccgo_ts + 23580,
+		Fname:       __ccgo_ts + 23576,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XSuppressLRM)),
 		Fmax:        int32(1),
 	},
 	96: {
-		Fname:  __ccgo_ts + 23592,
+		Fname:  __ccgo_ts + 23588,
 		Ftype1: int32(m_STR_TYPE10),
 		Fvalue: uintptr(unsafe.Pointer(&XSysDir)),
 	},
@@ -40365,7 +40305,7 @@ var _SysVarArr = [127]TSysVar{
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	98: {
-		Fname:  __ccgo_ts + 23603,
+		Fname:  __ccgo_ts + 23599,
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	99: {
@@ -40373,29 +40313,29 @@ var _SysVarArr = [127]TSysVar{
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	100: {
-		Fname:  __ccgo_ts + 23606,
+		Fname:  __ccgo_ts + 23602,
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	101: {
-		Fname:       __ccgo_ts + 23625,
+		Fname:       __ccgo_ts + 23621,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_INT_TYPE9),
 		Fvalue:      uintptr(unsafe.Pointer(&XTerminalHyperlinks)),
 		Fmax:        int32(1),
 	},
 	102: {
-		Fname:       __ccgo_ts + 12396,
+		Fname:       __ccgo_ts + 12296,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12396,
+		Fvalue:      __ccgo_ts + 12296,
 	},
 	103: {
-		Fname:       __ccgo_ts + 23644,
+		Fname:       __ccgo_ts + 23640,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	104: {
-		Fname:  __ccgo_ts + 23652,
+		Fname:  __ccgo_ts + 23648,
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	105: {
@@ -40403,35 +40343,35 @@ var _SysVarArr = [127]TSysVar{
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	106: {
-		Fname:       __ccgo_ts + 23665,
+		Fname:       __ccgo_ts + 23661,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 4538,
 	},
 	107: {
-		Fname:  __ccgo_ts + 23671,
+		Fname:  __ccgo_ts + 23667,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XTodoFilter)),
 	},
 	108: {
-		Fname:       __ccgo_ts + 23682,
+		Fname:       __ccgo_ts + 23678,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 4519,
 	},
 	109: {
-		Fname:  __ccgo_ts + 23691,
+		Fname:  __ccgo_ts + 23687,
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	110: {
-		Fname:  __ccgo_ts + 23694,
+		Fname:  __ccgo_ts + 23690,
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	111: {
-		Fname:       __ccgo_ts + 12378,
+		Fname:       __ccgo_ts + 12278,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12378,
+		Fvalue:      __ccgo_ts + 12278,
 	},
 	112: {
 		Fname:  __ccgo_ts + 2508,
@@ -40442,66 +40382,66 @@ var _SysVarArr = [127]TSysVar{
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	114: {
-		Fname:  __ccgo_ts + 23697,
+		Fname:  __ccgo_ts + 23693,
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	115: {
-		Fname:  __ccgo_ts + 23699,
+		Fname:  __ccgo_ts + 23695,
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	116: {
-		Fname:  __ccgo_ts + 23702,
+		Fname:  __ccgo_ts + 23698,
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	117: {
-		Fname:  __ccgo_ts + 23705,
+		Fname:  __ccgo_ts + 23701,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XUntimedBeforeTimed)),
 	},
 	118: {
-		Fname:  __ccgo_ts + 23718,
+		Fname:  __ccgo_ts + 23714,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XUse256Colors)),
 	},
 	119: {
-		Fname:  __ccgo_ts + 23731,
+		Fname:  __ccgo_ts + 23727,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XUseBGVTColors)),
 	},
 	120: {
-		Fname:  __ccgo_ts + 23745,
+		Fname:  __ccgo_ts + 23741,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XUseTrueColors)),
 	},
 	121: {
-		Fname:  __ccgo_ts + 23759,
+		Fname:  __ccgo_ts + 23755,
 		Ftype1: int32(m_INT_TYPE9),
 		Fvalue: uintptr(unsafe.Pointer(&XUseVTColors)),
 	},
 	122: {
-		Fname:  __ccgo_ts + 23771,
+		Fname:  __ccgo_ts + 23767,
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	123: {
-		Fname:  __ccgo_ts + 23774,
+		Fname:  __ccgo_ts + 23770,
 		Ftype1: int32(m_SPECIAL_TYPE1),
 	},
 	124: {
-		Fname:       __ccgo_ts + 23777,
+		Fname:       __ccgo_ts + 23773,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_SPECIAL_TYPE1),
 	},
 	125: {
-		Fname:       __ccgo_ts + 23790,
+		Fname:       __ccgo_ts + 23786,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
 		Fvalue:      __ccgo_ts + 5095,
 	},
 	126: {
-		Fname:       __ccgo_ts + 12386,
+		Fname:       __ccgo_ts + 12286,
 		Fmodifiable: uint8(1),
 		Ftype1:      int32(m_TRANS_TYPE1),
-		Fvalue:      __ccgo_ts + 12386,
+		Fvalue:      __ccgo_ts + 12286,
 	},
 }
 
@@ -40565,7 +40505,7 @@ func XEmptyVarStack(tls *libc.TLS, print_unmatched int32) (r int32) {
 	j = 0
 	for _VarStack != 0 {
 		if print_unmatched != 0 {
-			XWprint(tls, Xtr(tls, __ccgo_ts+23794), libc.VaList(bp+8, (*TPushedVars)(unsafe.Pointer(_VarStack)).Ffilename, (*TPushedVars)(unsafe.Pointer(_VarStack)).Flineno))
+			XWprint(tls, Xtr(tls, __ccgo_ts+23790), libc.VaList(bp+8, (*TPushedVars)(unsafe.Pointer(_VarStack)).Ffilename, (*TPushedVars)(unsafe.Pointer(_VarStack)).Flineno))
 		}
 		j = j + 1
 		next = (*TPushedVars)(unsafe.Pointer(_VarStack)).Fnext
@@ -40590,7 +40530,7 @@ func _add_sysvar_to_push(tls *libc.TLS, name uintptr, pv uintptr) (r int32) {
 		return int32(m_E_NOSUCH_VAR)
 	}
 	if !((*TSysVar)(unsafe.Pointer(v)).Fmodifiable != 0) {
-		XEprint(tls, __ccgo_ts+23824, libc.VaList(bp+8, XGetErr(tls, int32(m_E_CANT_MODIFY)), (*TSysVar)(unsafe.Pointer(v)).Fname))
+		XEprint(tls, __ccgo_ts+23820, libc.VaList(bp+8, XGetErr(tls, int32(m_E_CANT_MODIFY)), (*TSysVar)(unsafe.Pointer(v)).Fname))
 		return int32(m_E_CANT_MODIFY)
 	}
 	if !(n != 0) {
@@ -40773,7 +40713,7 @@ func XPopVars(tls *libc.TLS, p TParsePtr) (r1 int32) {
 	_VarStack = (*TPushedVars)(unsafe.Pointer(_VarStack)).Fnext
 	if XDebugFlag&int32(m_DB_PUSHPOP7) != 0 {
 		if libc.Xstrcmp(tls, (*TPushedVars)(unsafe.Pointer(pv)).Ffilename, XGetCurrentFilename(tls)) != 0 {
-			XWprint(tls, Xtr(tls, __ccgo_ts+23834), libc.VaList(bp+8, XGetCurrentFilename(tls), XLineNo, (*TPushedVars)(unsafe.Pointer(pv)).Ffilename, (*TPushedVars)(unsafe.Pointer(pv)).Flineno))
+			XWprint(tls, Xtr(tls, __ccgo_ts+23830), libc.VaList(bp+8, XGetCurrentFilename(tls), XLineNo, (*TPushedVars)(unsafe.Pointer(pv)).Ffilename, (*TPushedVars)(unsafe.Pointer(pv)).Flineno))
 		}
 	}
 	/* Pop the sysvars */
@@ -40804,7 +40744,7 @@ func XPopVars(tls *libc.TLS, p TParsePtr) (r1 int32) {
 		} else {
 			dest = XFindVar(tls, src+16, 0)
 			if XDebugFlag&int32(m_DB_UNUSED_VARS3) != 0 && dest != 0 && !((*TVar)(unsafe.Pointer(dest)).Fused_since_set != 0) {
-				XEprint(tls, Xtr(tls, __ccgo_ts+22313), libc.VaList(bp+8, dest+16, (*TVar)(unsafe.Pointer(dest)).Ffilename, (*TVar)(unsafe.Pointer(dest)).Flineno))
+				XEprint(tls, Xtr(tls, __ccgo_ts+22309), libc.VaList(bp+8, dest+16, (*TVar)(unsafe.Pointer(dest)).Ffilename, (*TVar)(unsafe.Pointer(dest)).Flineno))
 			}
 			if !(dest != 0) {
 				dest = XFindVar(tls, src+16, int32(1))
@@ -40871,7 +40811,7 @@ func _SetSysVarHelper(tls *libc.TLS, v uintptr, value uintptr) (r1 int32) {
 			*(*uintptr)(unsafe.Pointer(value + 16)) = libc.UintptrFromInt32(0)
 		}
 		(*TValue)(unsafe.Pointer(value)).Ftype1 = m_ERR_TYPE12
-		XEprint(tls, __ccgo_ts+23824, libc.VaList(bp+8, XGetErr(tls, int32(m_E_CANT_MODIFY)), (*TSysVar)(unsafe.Pointer(v)).Fname))
+		XEprint(tls, __ccgo_ts+23820, libc.VaList(bp+8, XGetErr(tls, int32(m_E_CANT_MODIFY)), (*TSysVar)(unsafe.Pointer(v)).Fname))
 		return int32(m_E_CANT_MODIFY)
 	}
 	if (*TSysVar)(unsafe.Pointer(v)).Ftype1 != int32(m_SPECIAL_TYPE1) && (*TSysVar)(unsafe.Pointer(v)).Ftype1 != int32(m_TRANS_TYPE1) && (*TSysVar)(unsafe.Pointer(v)).Ftype1 != (*TValue)(unsafe.Pointer(value)).Ftype1 {
@@ -41003,7 +40943,7 @@ func XGetSysVar(tls *libc.TLS, v uintptr, val uintptr) (r int32) {
 		/* In "verbose" mode, print attempts to test $RunOff */
 		if XDebugFlag&int32(m_DB_PRTLINE3) != 0 {
 			if (*TSysVar)(unsafe.Pointer(v)).Fvalue == uintptr(unsafe.Pointer(&XRunDisabled)) {
-				XWprint(tls, Xtr(tls, __ccgo_ts+23895), 0)
+				XWprint(tls, Xtr(tls, __ccgo_ts+23891), 0)
 			}
 		}
 		return m_OK
@@ -41107,7 +41047,7 @@ func _DumpSysVar(tls *libc.TLS, name uintptr, v uintptr) {
 	(**(**[74]uint8)(__ccgo_up(bp)))[0] = uint8('$')
 	(**(**[74]uint8)(__ccgo_up(bp)))[int32(1)] = uint8(0)
 	if name != 0 && libc.Xstrlen(tls, name) > uint64(m_VAR_NAME_LEN) {
-		libc.Xfprintf(tls, XErrFp, __ccgo_ts+23937, libc.VaList(bp+112, name))
+		libc.Xfprintf(tls, XErrFp, __ccgo_ts+23933, libc.VaList(bp+112, name))
 		return
 	}
 	if name != 0 {
@@ -41115,10 +41055,10 @@ func _DumpSysVar(tls *libc.TLS, name uintptr, v uintptr) {
 	} else {
 		libc.Xstrcat(tls, bp, (*TSysVar)(unsafe.Pointer(v)).Fname)
 	}
-	libc.Xfprintf(tls, XErrFp, __ccgo_ts+23957, libc.VaList(bp+112, bp))
+	libc.Xfprintf(tls, XErrFp, __ccgo_ts+23953, libc.VaList(bp+112, bp))
 	if v != 0 {
 		if (*TSysVar)(unsafe.Pointer(v)).Ftype1 == int32(m_CONST_INT_TYPE3) {
-			libc.Xfprintf(tls, XErrFp, __ccgo_ts+23964, libc.VaList(bp+112, (*TSysVar)(unsafe.Pointer(v)).Fmin))
+			libc.Xfprintf(tls, XErrFp, __ccgo_ts+23960, libc.VaList(bp+112, (*TSysVar)(unsafe.Pointer(v)).Fmin))
 		} else {
 			if (*TSysVar)(unsafe.Pointer(v)).Ftype1 == int32(m_SPECIAL_TYPE1) {
 				f = (*TSysVar)(unsafe.Pointer(v)).Fvalue
@@ -41142,7 +41082,7 @@ func _DumpSysVar(tls *libc.TLS, name uintptr, v uintptr) {
 						}
 						(**(**TValue)(__ccgo_up(bp + 80))).Ftype1 = m_ERR_TYPE12
 					} else {
-						libc.Xfprintf(tls, XErrFp, __ccgo_ts+23968, libc.VaList(bp+112, XGetErr(tls, r)))
+						libc.Xfprintf(tls, XErrFp, __ccgo_ts+23964, libc.VaList(bp+112, XGetErr(tls, r)))
 					}
 				} else {
 					if (*TSysVar)(unsafe.Pointer(v)).Ftype1 == int32(m_STR_TYPE10) {
@@ -41159,14 +41099,14 @@ func _DumpSysVar(tls *libc.TLS, name uintptr, v uintptr) {
 							libc.Xputc(tls, int32('\n'), XErrFp)
 						} else {
 							if !((*TSysVar)(unsafe.Pointer(v)).Fmodifiable != 0) {
-								libc.Xfprintf(tls, XErrFp, __ccgo_ts+23964, libc.VaList(bp+112, **(**int32)(__ccgo_up((*TSysVar)(unsafe.Pointer(v)).Fvalue))))
+								libc.Xfprintf(tls, XErrFp, __ccgo_ts+23960, libc.VaList(bp+112, **(**int32)(__ccgo_up((*TSysVar)(unsafe.Pointer(v)).Fvalue))))
 							} else {
-								libc.Xfprintf(tls, XErrFp, __ccgo_ts+23979, libc.VaList(bp+112, **(**int32)(__ccgo_up((*TSysVar)(unsafe.Pointer(v)).Fvalue))))
-								libc.Xfprintf(tls, XErrFp, __ccgo_ts+23987, libc.VaList(bp+112, (*TSysVar)(unsafe.Pointer(v)).Fmin))
+								libc.Xfprintf(tls, XErrFp, __ccgo_ts+23975, libc.VaList(bp+112, **(**int32)(__ccgo_up((*TSysVar)(unsafe.Pointer(v)).Fvalue))))
+								libc.Xfprintf(tls, XErrFp, __ccgo_ts+23983, libc.VaList(bp+112, (*TSysVar)(unsafe.Pointer(v)).Fmin))
 								if (*TSysVar)(unsafe.Pointer(v)).Fmax == int32(m_INT_MAX10) {
-									libc.Xfprintf(tls, XErrFp, __ccgo_ts+23993, 0)
+									libc.Xfprintf(tls, XErrFp, __ccgo_ts+23989, 0)
 								} else {
-									libc.Xfprintf(tls, XErrFp, __ccgo_ts+23999, libc.VaList(bp+112, (*TSysVar)(unsafe.Pointer(v)).Fmax))
+									libc.Xfprintf(tls, XErrFp, __ccgo_ts+23995, libc.VaList(bp+112, (*TSysVar)(unsafe.Pointer(v)).Fmax))
 								}
 							}
 						}
@@ -41281,7 +41221,7 @@ func XGenerateSysvarTranslationTemplates(tls *libc.TLS) {
 			Xprint_escaped_string_helper(tls, libc.Xstdout, Xtr(tls, msg), int32(1), 0)
 			libc.Xprintf(tls, __ccgo_ts+538, 0)
 		} else {
-			if !(libc.Xstrcmp(tls, _SysVarArr[i].Fname, __ccgo_ts+23096) != 0) || !(libc.Xstrcmp(tls, _SysVarArr[i].Fname, __ccgo_ts+23364) != 0) {
+			if !(libc.Xstrcmp(tls, _SysVarArr[i].Fname, __ccgo_ts+23092) != 0) || !(libc.Xstrcmp(tls, _SysVarArr[i].Fname, __ccgo_ts+23360) != 0) {
 				msg = **(**uintptr)(__ccgo_up(_SysVarArr[i].Fvalue))
 				libc.Xprintf(tls, __ccgo_ts+20811, libc.VaList(bp+8, _SysVarArr[i].Fname))
 				Xprint_escaped_string_helper(tls, libc.Xstdout, Xtr(tls, msg), int32(1), 0)
@@ -41300,13 +41240,13 @@ func Xprint_sysvar_tokens(tls *libc.TLS) {
 	defer tls.Free(16)
 	var i int32
 	_ = i
-	libc.Xprintf(tls, __ccgo_ts+24004, 0)
+	libc.Xprintf(tls, __ccgo_ts+24000, 0)
 	i = 0
 	for {
 		if !(i < libc.Int32FromUint64(libc.Uint64FromInt64(4064)/libc.Uint64FromInt64(32))) {
 			break
 		}
-		libc.Xprintf(tls, __ccgo_ts+24026, libc.VaList(bp+8, _SysVarArr[i].Fname))
+		libc.Xprintf(tls, __ccgo_ts+24022, libc.VaList(bp+8, _SysVarArr[i].Fname))
 		goto _1
 	_1:
 		;
@@ -41343,7 +41283,7 @@ var XCalPad = int32(1)
 
 var XCalSepLine = int32(1)
 
-var XCalType = __ccgo_ts + 12366
+var XCalType = __ccgo_ts + 12259
 
 var XCalWeeks int32
 
@@ -41370,13 +41310,13 @@ var XDateSep = uint8('-')
 var XDateTimeSep = uint8('@')
 
 var XDayName = [7]uintptr{
-	0: __ccgo_ts + 12371,
-	1: __ccgo_ts + 12378,
-	2: __ccgo_ts + 12386,
-	3: __ccgo_ts + 12396,
-	4: __ccgo_ts + 12405,
-	5: __ccgo_ts + 12412,
-	6: __ccgo_ts + 12421,
+	0: __ccgo_ts + 12271,
+	1: __ccgo_ts + 12278,
+	2: __ccgo_ts + 12286,
+	3: __ccgo_ts + 12296,
+	4: __ccgo_ts + 12305,
+	5: __ccgo_ts + 12312,
+	6: __ccgo_ts + 12321,
 }
 
 var XDebugFlag int32
@@ -41421,136 +41361,136 @@ var XDynamicHplu = __ccgo_ts + 4079
 
 var XDynamicMplu = __ccgo_ts + 4079
 
-var XEndSent = __ccgo_ts + 12355
+var XEndSent = __ccgo_ts + 12328
 
-var XEndSentIg = __ccgo_ts + 12348
+var XEndSentIg = __ccgo_ts + 12252
 
 var XErrFp uintptr
 
 var XErrMsg = [123]uintptr{
-	0:   __ccgo_ts + 9135,
-	1:   __ccgo_ts + 9138,
-	2:   __ccgo_ts + 9150,
-	3:   __ccgo_ts + 9164,
-	4:   __ccgo_ts + 9187,
-	5:   __ccgo_ts + 9206,
-	6:   __ccgo_ts + 9218,
-	7:   __ccgo_ts + 9237,
-	8:   __ccgo_ts + 9255,
-	9:   __ccgo_ts + 9276,
-	10:  __ccgo_ts + 9290,
-	11:  __ccgo_ts + 9308,
-	12:  __ccgo_ts + 9353,
-	13:  __ccgo_ts + 9389,
-	14:  __ccgo_ts + 9402,
-	15:  __ccgo_ts + 9416,
-	16:  __ccgo_ts + 9430,
-	17:  __ccgo_ts + 9468,
-	18:  __ccgo_ts + 9485,
-	19:  __ccgo_ts + 9504,
-	20:  __ccgo_ts + 9527,
-	21:  __ccgo_ts + 9550,
-	22:  __ccgo_ts + 9560,
-	23:  __ccgo_ts + 9607,
-	24:  __ccgo_ts + 9622,
-	25:  __ccgo_ts + 9645,
-	26:  __ccgo_ts + 9666,
-	27:  __ccgo_ts + 9685,
-	28:  __ccgo_ts + 9701,
-	29:  __ccgo_ts + 9717,
-	30:  __ccgo_ts + 9732,
-	31:  __ccgo_ts + 9748,
-	32:  __ccgo_ts + 9783,
-	33:  __ccgo_ts + 9795,
-	34:  __ccgo_ts + 9817,
-	35:  __ccgo_ts + 9837,
-	36:  __ccgo_ts + 9862,
-	37:  __ccgo_ts + 9888,
-	38:  __ccgo_ts + 9913,
-	39:  __ccgo_ts + 9941,
-	40:  __ccgo_ts + 9993,
-	41:  __ccgo_ts + 10006,
-	42:  __ccgo_ts + 10019,
-	43:  __ccgo_ts + 10038,
+	0:   __ccgo_ts + 9125,
+	1:   __ccgo_ts + 9128,
+	2:   __ccgo_ts + 9140,
+	3:   __ccgo_ts + 9154,
+	4:   __ccgo_ts + 9177,
+	5:   __ccgo_ts + 9196,
+	6:   __ccgo_ts + 9208,
+	7:   __ccgo_ts + 9227,
+	8:   __ccgo_ts + 9245,
+	9:   __ccgo_ts + 9266,
+	10:  __ccgo_ts + 9280,
+	11:  __ccgo_ts + 9298,
+	12:  __ccgo_ts + 9343,
+	13:  __ccgo_ts + 9379,
+	14:  __ccgo_ts + 9392,
+	15:  __ccgo_ts + 9406,
+	16:  __ccgo_ts + 9420,
+	17:  __ccgo_ts + 9458,
+	18:  __ccgo_ts + 9475,
+	19:  __ccgo_ts + 9494,
+	20:  __ccgo_ts + 9517,
+	21:  __ccgo_ts + 9540,
+	22:  __ccgo_ts + 9550,
+	23:  __ccgo_ts + 9597,
+	24:  __ccgo_ts + 9612,
+	25:  __ccgo_ts + 9635,
+	26:  __ccgo_ts + 9656,
+	27:  __ccgo_ts + 9675,
+	28:  __ccgo_ts + 9691,
+	29:  __ccgo_ts + 9707,
+	30:  __ccgo_ts + 9722,
+	31:  __ccgo_ts + 9738,
+	32:  __ccgo_ts + 9773,
+	33:  __ccgo_ts + 9785,
+	34:  __ccgo_ts + 9807,
+	35:  __ccgo_ts + 9827,
+	36:  __ccgo_ts + 9852,
+	37:  __ccgo_ts + 9878,
+	38:  __ccgo_ts + 9903,
+	39:  __ccgo_ts + 9931,
+	40:  __ccgo_ts + 9983,
+	41:  __ccgo_ts + 9996,
+	42:  __ccgo_ts + 10009,
+	43:  __ccgo_ts + 10028,
 	44:  __ccgo_ts,
-	45:  __ccgo_ts + 10072,
-	46:  __ccgo_ts + 10102,
-	47:  __ccgo_ts + 10147,
-	48:  __ccgo_ts + 10185,
-	49:  __ccgo_ts + 10230,
-	50:  __ccgo_ts + 10275,
-	51:  __ccgo_ts + 10296,
-	52:  __ccgo_ts + 10318,
-	53:  __ccgo_ts + 10338,
-	54:  __ccgo_ts + 10352,
-	55:  __ccgo_ts + 10387,
-	56:  __ccgo_ts + 10408,
-	57:  __ccgo_ts + 10440,
-	58:  __ccgo_ts + 10501,
-	59:  __ccgo_ts + 10521,
-	60:  __ccgo_ts + 10543,
-	61:  __ccgo_ts + 10563,
-	62:  __ccgo_ts + 10603,
-	63:  __ccgo_ts + 10626,
-	64:  __ccgo_ts + 10642,
-	65:  __ccgo_ts + 10666,
-	66:  __ccgo_ts + 10704,
-	67:  __ccgo_ts + 10749,
-	68:  __ccgo_ts + 10778,
-	69:  __ccgo_ts + 10806,
-	70:  __ccgo_ts + 10833,
-	71:  __ccgo_ts + 10865,
-	72:  __ccgo_ts + 10889,
-	73:  __ccgo_ts + 10922,
-	74:  __ccgo_ts + 10952,
-	75:  __ccgo_ts + 10985,
-	76:  __ccgo_ts + 10994,
-	77:  __ccgo_ts + 11000,
-	78:  __ccgo_ts + 11012,
-	79:  __ccgo_ts + 11028,
-	80:  __ccgo_ts + 11043,
-	81:  __ccgo_ts + 11051,
-	82:  __ccgo_ts + 9732,
-	83:  __ccgo_ts + 11093,
-	84:  __ccgo_ts + 11135,
-	85:  __ccgo_ts + 11159,
-	86:  __ccgo_ts + 11179,
-	87:  __ccgo_ts + 11197,
-	88:  __ccgo_ts + 11224,
-	89:  __ccgo_ts + 11251,
-	90:  __ccgo_ts + 11281,
-	91:  __ccgo_ts + 11298,
-	92:  __ccgo_ts + 11320,
-	93:  __ccgo_ts + 11339,
-	94:  __ccgo_ts + 11372,
-	95:  __ccgo_ts + 11396,
-	96:  __ccgo_ts + 11410,
-	97:  __ccgo_ts + 11449,
-	98:  __ccgo_ts + 11466,
-	99:  __ccgo_ts + 11490,
-	100: __ccgo_ts + 11523,
-	101: __ccgo_ts + 11547,
-	102: __ccgo_ts + 11563,
-	103: __ccgo_ts + 11584,
-	104: __ccgo_ts + 11630,
-	105: __ccgo_ts + 11653,
-	106: __ccgo_ts + 11677,
-	107: __ccgo_ts + 11711,
-	108: __ccgo_ts + 11757,
-	109: __ccgo_ts + 11797,
-	110: __ccgo_ts + 11825,
-	111: __ccgo_ts + 11860,
-	112: __ccgo_ts + 11879,
-	113: __ccgo_ts + 11915,
-	114: __ccgo_ts + 11942,
-	115: __ccgo_ts + 11981,
-	116: __ccgo_ts + 12021,
-	117: __ccgo_ts + 12081,
-	118: __ccgo_ts + 12115,
-	119: __ccgo_ts + 12150,
-	120: __ccgo_ts + 12184,
-	121: __ccgo_ts + 12220,
-	122: __ccgo_ts + 12240,
+	45:  __ccgo_ts + 10062,
+	46:  __ccgo_ts + 10092,
+	47:  __ccgo_ts + 10137,
+	48:  __ccgo_ts + 10175,
+	49:  __ccgo_ts + 10220,
+	50:  __ccgo_ts + 10265,
+	51:  __ccgo_ts + 10286,
+	52:  __ccgo_ts + 10308,
+	53:  __ccgo_ts + 10328,
+	54:  __ccgo_ts + 10342,
+	55:  __ccgo_ts + 10377,
+	56:  __ccgo_ts + 10398,
+	57:  __ccgo_ts + 10430,
+	58:  __ccgo_ts + 10491,
+	59:  __ccgo_ts + 10511,
+	60:  __ccgo_ts + 10533,
+	61:  __ccgo_ts + 10553,
+	62:  __ccgo_ts + 10593,
+	63:  __ccgo_ts + 10616,
+	64:  __ccgo_ts + 10632,
+	65:  __ccgo_ts + 10656,
+	66:  __ccgo_ts + 10694,
+	67:  __ccgo_ts + 10739,
+	68:  __ccgo_ts + 10768,
+	69:  __ccgo_ts + 10796,
+	70:  __ccgo_ts + 10823,
+	71:  __ccgo_ts + 10855,
+	72:  __ccgo_ts + 10879,
+	73:  __ccgo_ts + 10912,
+	74:  __ccgo_ts + 10942,
+	75:  __ccgo_ts + 10975,
+	76:  __ccgo_ts + 10984,
+	77:  __ccgo_ts + 10990,
+	78:  __ccgo_ts + 11002,
+	79:  __ccgo_ts + 11018,
+	80:  __ccgo_ts + 11033,
+	81:  __ccgo_ts + 11041,
+	82:  __ccgo_ts + 9722,
+	83:  __ccgo_ts + 11083,
+	84:  __ccgo_ts + 11125,
+	85:  __ccgo_ts + 11149,
+	86:  __ccgo_ts + 11169,
+	87:  __ccgo_ts + 11187,
+	88:  __ccgo_ts + 11214,
+	89:  __ccgo_ts + 11241,
+	90:  __ccgo_ts + 11271,
+	91:  __ccgo_ts + 11288,
+	92:  __ccgo_ts + 11310,
+	93:  __ccgo_ts + 11329,
+	94:  __ccgo_ts + 11362,
+	95:  __ccgo_ts + 11386,
+	96:  __ccgo_ts + 11400,
+	97:  __ccgo_ts + 11439,
+	98:  __ccgo_ts + 11456,
+	99:  __ccgo_ts + 11480,
+	100: __ccgo_ts + 11513,
+	101: __ccgo_ts + 11537,
+	102: __ccgo_ts + 11553,
+	103: __ccgo_ts + 11574,
+	104: __ccgo_ts + 11620,
+	105: __ccgo_ts + 11643,
+	106: __ccgo_ts + 11667,
+	107: __ccgo_ts + 11701,
+	108: __ccgo_ts + 11747,
+	109: __ccgo_ts + 11787,
+	110: __ccgo_ts + 11815,
+	111: __ccgo_ts + 11850,
+	112: __ccgo_ts + 11869,
+	113: __ccgo_ts + 11905,
+	114: __ccgo_ts + 11932,
+	115: __ccgo_ts + 11971,
+	116: __ccgo_ts + 12011,
+	117: __ccgo_ts + 12071,
+	118: __ccgo_ts + 12105,
+	119: __ccgo_ts + 12140,
+	120: __ccgo_ts + 12174,
+	121: __ccgo_ts + 12210,
+	122: __ccgo_ts + 12230,
 }
 
 /*
@@ -41758,91 +41698,91 @@ var XFreshLine int32
 //	/* The array holding the built-in functions. */
 var XFunc = [146]TBuiltinFunc{
 	0: {
-		Fname:    __ccgo_ts + 6607,
+		Fname:    __ccgo_ts + 6597,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(1),
 	},
 	1: {
-		Fname:        __ccgo_ts + 6609,
+		Fname:        __ccgo_ts + 6599,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	2: {
-		Fname:    __ccgo_ts + 6613,
+		Fname:    __ccgo_ts + 6603,
 		Fminargs: uint8(2),
 		Fmaxargs: uint8(2),
 	},
 	3: {
-		Fname:    __ccgo_ts + 6620,
+		Fname:    __ccgo_ts + 6610,
 		Fmaxargs: uint8(1),
 	},
 	4: {
-		Fname:    __ccgo_ts + 6626,
+		Fname:    __ccgo_ts + 6616,
 		Fmaxargs: uint8(1),
 	},
 	5: {
-		Fname:        __ccgo_ts + 6632,
+		Fname:        __ccgo_ts + 6622,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(4),
 		Fis_constant: uint8(1),
 	},
 	6: {
-		Fname:        __ccgo_ts + 6637,
+		Fname:        __ccgo_ts + 6627,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(5),
 		Fis_constant: uint8(1),
 	},
 	7: {
-		Fname:    __ccgo_ts + 6647,
+		Fname:    __ccgo_ts + 6637,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(1),
 	},
 	8: {
-		Fname:        __ccgo_ts + 6652,
+		Fname:        __ccgo_ts + 6642,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	9: {
-		Fname:        __ccgo_ts + 6656,
+		Fname:        __ccgo_ts + 6646,
 		Fis_constant: uint8(1),
 	},
 	10: {
-		Fname:        __ccgo_ts + 6663,
+		Fname:        __ccgo_ts + 6653,
 		Fminargs:     uint8(2),
 		Fmaxargs:     uint8(2),
 		Fis_constant: uint8(1),
 	},
 	11: {
-		Fname: __ccgo_ts + 6669,
+		Fname: __ccgo_ts + 6659,
 	},
 	12: {
-		Fname:        __ccgo_ts + 6678,
+		Fname:        __ccgo_ts + 6668,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(m_NO_MAX_ARGS),
 		Fis_constant: uint8(1),
 	},
 	13: {
-		Fname:        __ccgo_ts + 6683,
+		Fname:        __ccgo_ts + 6673,
 		Fminargs:     uint8(2),
 		Fmaxargs:     uint8(m_NO_MAX_ARGS),
 		Fis_constant: uint8(1),
 	},
 	14: {
-		Fname:        __ccgo_ts + 6690,
+		Fname:        __ccgo_ts + 6680,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	15: {
-		Fname:        __ccgo_ts + 6700,
+		Fname:        __ccgo_ts + 6690,
 		Fminargs:     uint8(2),
 		Fmaxargs:     uint8(2),
 		Fis_constant: uint8(1),
 	},
 	16: {
-		Fname:    __ccgo_ts + 6707,
+		Fname:    __ccgo_ts + 6697,
 		Fmaxargs: uint8(1),
 	},
 	17: {
@@ -41852,28 +41792,28 @@ var XFunc = [146]TBuiltinFunc{
 		Fis_constant: uint8(1),
 	},
 	18: {
-		Fname: __ccgo_ts + 6715,
+		Fname: __ccgo_ts + 6705,
 	},
 	19: {
-		Fname:        __ccgo_ts + 6723,
+		Fname:        __ccgo_ts + 6713,
 		Fminargs:     uint8(3),
 		Fmaxargs:     uint8(3),
 		Fis_constant: uint8(1),
 	},
 	20: {
-		Fname:        __ccgo_ts + 6728,
+		Fname:        __ccgo_ts + 6718,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	21: {
-		Fname:        __ccgo_ts + 6737,
+		Fname:        __ccgo_ts + 6727,
 		Fminargs:     uint8(2),
 		Fmaxargs:     uint8(5),
 		Fis_constant: uint8(1),
 	},
 	22: {
-		Fname:    __ccgo_ts + 6746,
+		Fname:    __ccgo_ts + 6736,
 		Fmaxargs: uint8(1),
 	},
 	23: {
@@ -41883,89 +41823,89 @@ var XFunc = [146]TBuiltinFunc{
 		Fis_constant: uint8(1),
 	},
 	24: {
-		Fname:        __ccgo_ts + 6751,
+		Fname:        __ccgo_ts + 6741,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(2),
 		Fis_constant: uint8(1),
 	},
 	25: {
-		Fname:    __ccgo_ts + 6761,
+		Fname:    __ccgo_ts + 6751,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(1),
 	},
 	26: {
-		Fname:    __ccgo_ts + 6769,
+		Fname:    __ccgo_ts + 6759,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(3),
 	},
 	27: {
-		Fname:    __ccgo_ts + 6777,
+		Fname:    __ccgo_ts + 6767,
 		Fmaxargs: uint8(1),
 	},
 	28: {
-		Fname:    __ccgo_ts + 6782,
+		Fname:    __ccgo_ts + 6772,
 		Fmaxargs: uint8(1),
 	},
 	29: {
-		Fname:        __ccgo_ts + 6793,
+		Fname:        __ccgo_ts + 6783,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(2),
 		Fis_constant: uint8(1),
 	},
 	30: {
-		Fname:        __ccgo_ts + 6800,
+		Fname:        __ccgo_ts + 6790,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	31: {
-		Fname:    __ccgo_ts + 6805,
+		Fname:    __ccgo_ts + 6795,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(2),
 	},
 	32: {
-		Fname:    __ccgo_ts + 6814,
+		Fname:    __ccgo_ts + 6804,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(1),
 	},
 	33: {
-		Fname:    __ccgo_ts + 6823,
+		Fname:    __ccgo_ts + 6813,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(1),
 	},
 	34: {
-		Fname: __ccgo_ts + 6836,
+		Fname: __ccgo_ts + 6826,
 	},
 	35: {
 		Fname: __ccgo_ts + 1617,
 	},
 	36: {
-		Fname:    __ccgo_ts + 6844,
+		Fname:    __ccgo_ts + 6834,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(1),
 	},
 	37: {
-		Fname:    __ccgo_ts + 6851,
+		Fname:    __ccgo_ts + 6841,
 		Fminargs: uint8(2),
 		Fmaxargs: uint8(5),
 	},
 	38: {
-		Fname:    __ccgo_ts + 6859,
+		Fname:    __ccgo_ts + 6849,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(1),
 	},
 	39: {
-		Fname:    __ccgo_ts + 6866,
+		Fname:    __ccgo_ts + 6856,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(1),
 	},
 	40: {
-		Fname:    __ccgo_ts + 6873,
+		Fname:    __ccgo_ts + 6863,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(1),
 	},
 	41: {
-		Fname:        __ccgo_ts + 6881,
+		Fname:        __ccgo_ts + 6871,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
@@ -41977,58 +41917,58 @@ var XFunc = [146]TBuiltinFunc{
 		Fis_constant: uint8(1),
 	},
 	43: {
-		Fname:        __ccgo_ts + 6885,
+		Fname:        __ccgo_ts + 6875,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	44: {
-		Fname:        __ccgo_ts + 6896,
+		Fname:        __ccgo_ts + 6886,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	45: {
-		Fname:        __ccgo_ts + 6910,
+		Fname:        __ccgo_ts + 6900,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(m_NO_MAX_ARGS),
 		Fis_constant: uint8(1),
 	},
 	46: {
-		Fname:        __ccgo_ts + 6914,
+		Fname:        __ccgo_ts + 6904,
 		Fminargs:     uint8(2),
 		Fmaxargs:     uint8(3),
 		Fis_constant: uint8(1),
 	},
 	47: {
-		Fname:        __ccgo_ts + 6920,
+		Fname:        __ccgo_ts + 6910,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(m_NO_MAX_ARGS),
 		Fis_constant: uint8(1),
 	},
 	48: {
-		Fname:        __ccgo_ts + 6926,
+		Fname:        __ccgo_ts + 6916,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	49: {
-		Fname:    __ccgo_ts + 6934,
+		Fname:    __ccgo_ts + 6924,
 		Fmaxargs: uint8(2),
 	},
 	50: {
-		Fname:        __ccgo_ts + 6940,
+		Fname:        __ccgo_ts + 6930,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	51: {
-		Fname:    __ccgo_ts + 6947,
+		Fname:    __ccgo_ts + 6937,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(1),
 	},
 	52: {
-		Fname:    __ccgo_ts + 6957,
+		Fname:    __ccgo_ts + 6947,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(1),
 	},
@@ -42038,77 +41978,77 @@ var XFunc = [146]TBuiltinFunc{
 		Fis_constant: uint8(1),
 	},
 	54: {
-		Fname:        __ccgo_ts + 6966,
+		Fname:        __ccgo_ts + 6956,
 		Fis_constant: uint8(1),
 	},
 	55: {
-		Fname:        __ccgo_ts + 6975,
+		Fname:        __ccgo_ts + 6965,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	56: {
-		Fname:        __ccgo_ts + 6986,
+		Fname:        __ccgo_ts + 6976,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	57: {
-		Fname:        __ccgo_ts + 6992,
+		Fname:        __ccgo_ts + 6982,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(m_NO_MAX_ARGS),
 		Fis_constant: uint8(1),
 	},
 	58: {
-		Fname:        __ccgo_ts + 6996,
+		Fname:        __ccgo_ts + 6986,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(m_NO_MAX_ARGS),
 		Fis_constant: uint8(1),
 	},
 	59: {
-		Fname:        __ccgo_ts + 7003,
+		Fname:        __ccgo_ts + 6993,
 		Fminargs:     uint8(2),
 		Fmaxargs:     uint8(3),
 		Fis_constant: uint8(1),
 	},
 	60: {
-		Fname:        __ccgo_ts + 7011,
+		Fname:        __ccgo_ts + 7001,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	61: {
-		Fname:        __ccgo_ts + 7019,
+		Fname:        __ccgo_ts + 7009,
 		Fminargs:     uint8(3),
 		Fmaxargs:     uint8(4),
 		Fis_constant: uint8(1),
 	},
 	62: {
-		Fname:        __ccgo_ts + 7025,
+		Fname:        __ccgo_ts + 7015,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	63: {
-		Fname:        __ccgo_ts + 7034,
+		Fname:        __ccgo_ts + 7024,
 		Fminargs:     uint8(2),
 		Fmaxargs:     uint8(3),
 		Fis_constant: uint8(1),
 	},
 	64: {
-		Fname:        __ccgo_ts + 7043,
+		Fname:        __ccgo_ts + 7033,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	65: {
-		Fname:        __ccgo_ts + 7051,
+		Fname:        __ccgo_ts + 7041,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(m_NO_MAX_ARGS),
 		Fis_constant: uint8(1),
 	},
 	66: {
-		Fname:    __ccgo_ts + 7055,
+		Fname:    __ccgo_ts + 7045,
 		Fmaxargs: uint8(2),
 	},
 	67: {
@@ -42118,72 +42058,72 @@ var XFunc = [146]TBuiltinFunc{
 		Fis_constant: uint8(1),
 	},
 	68: {
-		Fname:        __ccgo_ts + 7067,
+		Fname:        __ccgo_ts + 7057,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	69: {
-		Fname:        __ccgo_ts + 7071,
+		Fname:        __ccgo_ts + 7061,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	70: {
-		Fname:    __ccgo_ts + 7078,
+		Fname:    __ccgo_ts + 7068,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(3),
 	},
 	71: {
-		Fname:    __ccgo_ts + 7087,
+		Fname:    __ccgo_ts + 7077,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(3),
 	},
 	72: {
-		Fname:    __ccgo_ts + 7100,
+		Fname:    __ccgo_ts + 7090,
 		Fmaxargs: uint8(2),
 	},
 	73: {
-		Fname:    __ccgo_ts + 7110,
+		Fname:    __ccgo_ts + 7100,
 		Fmaxargs: uint8(1),
 	},
 	74: {
-		Fname:    __ccgo_ts + 7119,
+		Fname:    __ccgo_ts + 7109,
 		Fmaxargs: uint8(1),
 	},
 	75: {
-		Fname:    __ccgo_ts + 7131,
+		Fname:    __ccgo_ts + 7121,
 		Fmaxargs: uint8(1),
 	},
 	76: {
-		Fname:    __ccgo_ts + 7139,
+		Fname:    __ccgo_ts + 7129,
 		Fmaxargs: uint8(1),
 	},
 	77: {
-		Fname:    __ccgo_ts + 7150,
+		Fname:    __ccgo_ts + 7140,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(3),
 	},
 	78: {
-		Fname:    __ccgo_ts + 7159,
+		Fname:    __ccgo_ts + 7149,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(m_NO_MAX_ARGS),
 	},
 	79: {
-		Fname:    __ccgo_ts + 7169,
+		Fname:    __ccgo_ts + 7159,
 		Fmaxargs: uint8(1),
 	},
 	80: {
-		Fname:    __ccgo_ts + 7175,
+		Fname:    __ccgo_ts + 7165,
 		Fmaxargs: uint8(1),
 	},
 	81: {
-		Fname:    __ccgo_ts + 7181,
+		Fname:    __ccgo_ts + 7171,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(1),
 	},
 	82: {
-		Fname:    __ccgo_ts + 7190,
+		Fname:    __ccgo_ts + 7180,
 		Fminargs: uint8(2),
 		Fmaxargs: uint8(m_NO_MAX_ARGS),
 	},
@@ -42191,103 +42131,103 @@ var XFunc = [146]TBuiltinFunc{
 		Fname: __ccgo_ts + 4953,
 	},
 	84: {
-		Fname:        __ccgo_ts + 7201,
+		Fname:        __ccgo_ts + 7191,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	85: {
-		Fname:    __ccgo_ts + 7205,
+		Fname:    __ccgo_ts + 7195,
 		Fmaxargs: uint8(1),
 	},
 	86: {
-		Fname:        __ccgo_ts + 7220,
+		Fname:        __ccgo_ts + 7210,
 		Fis_constant: uint8(1),
 	},
 	87: {
-		Fname:        __ccgo_ts + 7227,
+		Fname:        __ccgo_ts + 7217,
 		Fminargs:     uint8(3),
 		Fmaxargs:     uint8(4),
 		Fis_constant: uint8(1),
 	},
 	88: {
-		Fname:        __ccgo_ts + 7231,
+		Fname:        __ccgo_ts + 7221,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(3),
 		Fis_constant: uint8(1),
 	},
 	89: {
-		Fname:        __ccgo_ts + 7238,
+		Fname:        __ccgo_ts + 7228,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(4),
 		Fis_constant: uint8(1),
 	},
 	90: {
-		Fname:        __ccgo_ts + 7245,
+		Fname:        __ccgo_ts + 7235,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(3),
 		Fis_constant: uint8(1),
 	},
 	91: {
-		Fname: __ccgo_ts + 7253,
+		Fname: __ccgo_ts + 7243,
 	},
 	92: {
-		Fname: __ccgo_ts + 7265,
+		Fname: __ccgo_ts + 7255,
 	},
 	93: {
-		Fname: __ccgo_ts + 7273,
+		Fname: __ccgo_ts + 7263,
 	},
 	94: {
-		Fname: __ccgo_ts + 7283,
+		Fname: __ccgo_ts + 7273,
 	},
 	95: {
-		Fname:        __ccgo_ts + 7288,
+		Fname:        __ccgo_ts + 7278,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	96: {
-		Fname:    __ccgo_ts + 7292,
+		Fname:    __ccgo_ts + 7282,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(2),
 	},
 	97: {
-		Fname:        __ccgo_ts + 7298,
+		Fname:        __ccgo_ts + 7288,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	98: {
-		Fname:    __ccgo_ts + 7310,
+		Fname:    __ccgo_ts + 7300,
 		Fminargs: uint8(2),
 		Fmaxargs: uint8(m_NO_MAX_ARGS),
 	},
 	99: {
-		Fname:    __ccgo_ts + 7316,
+		Fname:    __ccgo_ts + 7306,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(2),
 	},
 	100: {
-		Fname: __ccgo_ts + 7322,
+		Fname: __ccgo_ts + 7312,
 	},
 	101: {
-		Fname:        __ccgo_ts + 7329,
+		Fname:        __ccgo_ts + 7319,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	102: {
-		Fname:        __ccgo_ts + 7336,
+		Fname:        __ccgo_ts + 7326,
 		Fminargs:     uint8(2),
 		Fmaxargs:     uint8(3),
 		Fis_constant: uint8(1),
 	},
 	103: {
-		Fname:    __ccgo_ts + 7343,
+		Fname:    __ccgo_ts + 7333,
 		Fmaxargs: uint8(1),
 	},
 	104: {
-		Fname:    __ccgo_ts + 7351,
+		Fname:    __ccgo_ts + 7341,
 		Fmaxargs: uint8(1),
 	},
 	105: {
@@ -42297,30 +42237,30 @@ var XFunc = [146]TBuiltinFunc{
 		Fis_constant: uint8(1),
 	},
 	106: {
-		Fname:        __ccgo_ts + 7358,
+		Fname:        __ccgo_ts + 7348,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	107: {
-		Fname:    __ccgo_ts + 7367,
+		Fname:    __ccgo_ts + 7357,
 		Fmaxargs: uint8(1),
 	},
 	108: {
 		Fname: __ccgo_ts + 4538,
 	},
 	109: {
-		Fname:    __ccgo_ts + 7376,
+		Fname:    __ccgo_ts + 7366,
 		Fmaxargs: uint8(m_NO_MAX_ARGS),
 	},
 	110: {
-		Fname: __ccgo_ts + 7381,
+		Fname: __ccgo_ts + 7371,
 	},
 	111: {
-		Fname: __ccgo_ts + 7390,
+		Fname: __ccgo_ts + 7380,
 	},
 	112: {
-		Fname: __ccgo_ts + 7399,
+		Fname: __ccgo_ts + 7389,
 	},
 	113: {
 		Fname: __ccgo_ts + 2478,
@@ -42329,117 +42269,117 @@ var XFunc = [146]TBuiltinFunc{
 		Fname: __ccgo_ts + 2487,
 	},
 	115: {
-		Fname: __ccgo_ts + 7419,
+		Fname: __ccgo_ts + 7409,
 	},
 	116: {
-		Fname: __ccgo_ts + 7429,
+		Fname: __ccgo_ts + 7419,
 	},
 	117: {
-		Fname: __ccgo_ts + 7442,
+		Fname: __ccgo_ts + 7432,
 	},
 	118: {
-		Fname: __ccgo_ts + 7460,
+		Fname: __ccgo_ts + 7450,
 	},
 	119: {
-		Fname: __ccgo_ts + 7475,
+		Fname: __ccgo_ts + 7465,
 	},
 	120: {
-		Fname: __ccgo_ts + 7492,
+		Fname: __ccgo_ts + 7482,
 	},
 	121: {
-		Fname:    __ccgo_ts + 7501,
+		Fname:    __ccgo_ts + 7491,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(3),
 	},
 	122: {
-		Fname:    __ccgo_ts + 7509,
+		Fname:    __ccgo_ts + 7499,
 		Fminargs: uint8(1),
 		Fmaxargs: uint8(1),
 	},
 	123: {
-		Fname: __ccgo_ts + 7518,
+		Fname: __ccgo_ts + 7508,
 	},
 	124: {
-		Fname: __ccgo_ts + 7529,
+		Fname: __ccgo_ts + 7519,
 	},
 	125: {
-		Fname: __ccgo_ts + 7544,
+		Fname: __ccgo_ts + 7534,
 	},
 	126: {
-		Fname: __ccgo_ts + 7557,
+		Fname: __ccgo_ts + 7547,
 	},
 	127: {
-		Fname: __ccgo_ts + 7565,
+		Fname: __ccgo_ts + 7555,
 	},
 	128: {
-		Fname: __ccgo_ts + 7578,
+		Fname: __ccgo_ts + 7568,
 	},
 	129: {
-		Fname: __ccgo_ts + 7587,
+		Fname: __ccgo_ts + 7577,
 	},
 	130: {
-		Fname: __ccgo_ts + 7596,
+		Fname: __ccgo_ts + 7586,
 	},
 	131: {
-		Fname: __ccgo_ts + 7610,
+		Fname: __ccgo_ts + 7600,
 	},
 	132: {
-		Fname: __ccgo_ts + 7622,
+		Fname: __ccgo_ts + 7612,
 	},
 	133: {
-		Fname: __ccgo_ts + 7633,
+		Fname: __ccgo_ts + 7623,
 	},
 	134: {
-		Fname: __ccgo_ts + 7640,
+		Fname: __ccgo_ts + 7630,
 	},
 	135: {
-		Fname: __ccgo_ts + 7650,
+		Fname: __ccgo_ts + 7640,
 	},
 	136: {
-		Fname:        __ccgo_ts + 7660,
+		Fname:        __ccgo_ts + 7650,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	137: {
-		Fname:    __ccgo_ts + 7667,
+		Fname:    __ccgo_ts + 7657,
 		Fminargs: uint8(2),
 		Fmaxargs: uint8(3),
 	},
 	138: {
-		Fname:        __ccgo_ts + 7677,
+		Fname:        __ccgo_ts + 7667,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	139: {
-		Fname:        __ccgo_ts + 7683,
+		Fname:        __ccgo_ts + 7673,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	140: {
-		Fname:        __ccgo_ts + 7694,
+		Fname:        __ccgo_ts + 7684,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(2),
 		Fis_constant: uint8(1),
 	},
 	141: {
-		Fname:        __ccgo_ts + 7700,
+		Fname:        __ccgo_ts + 7690,
 		Fis_constant: uint8(1),
 	},
 	142: {
-		Fname:    __ccgo_ts + 7708,
+		Fname:    __ccgo_ts + 7698,
 		Fmaxargs: uint8(3),
 	},
 	143: {
-		Fname:        __ccgo_ts + 7715,
+		Fname:        __ccgo_ts + 7705,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
 	},
 	144: {
-		Fname:        __ccgo_ts + 7721,
+		Fname:        __ccgo_ts + 7711,
 		Fminargs:     uint8(1),
 		Fmaxargs:     uint8(1),
 		Fis_constant: uint8(1),
@@ -42505,7 +42445,7 @@ var XLocalSysTime = -int32(1)
 
 var XLocalTimeZone uintptr
 
-var XLocation = __ccgo_ts + 12359
+var XLocation = __ccgo_ts + 12264
 
 var XLongDeg int32
 
@@ -42582,18 +42522,18 @@ var XMonthIndex = [2][12]int32{
 }
 
 var XMonthName = [12]uintptr{
-	0:  __ccgo_ts + 12262,
-	1:  __ccgo_ts + 12270,
-	2:  __ccgo_ts + 12279,
-	3:  __ccgo_ts + 12285,
-	4:  __ccgo_ts + 12291,
-	5:  __ccgo_ts + 12295,
-	6:  __ccgo_ts + 12300,
-	7:  __ccgo_ts + 12305,
-	8:  __ccgo_ts + 12312,
-	9:  __ccgo_ts + 12322,
-	10: __ccgo_ts + 12330,
-	11: __ccgo_ts + 12339,
+	0:  __ccgo_ts + 12356,
+	1:  __ccgo_ts + 12364,
+	2:  __ccgo_ts + 12373,
+	3:  __ccgo_ts + 12379,
+	4:  __ccgo_ts + 12385,
+	5:  __ccgo_ts + 12389,
+	6:  __ccgo_ts + 12394,
+	7:  __ccgo_ts + 12399,
+	8:  __ccgo_ts + 12406,
+	9:  __ccgo_ts + 12416,
+	10: __ccgo_ts + 12424,
+	11: __ccgo_ts + 12433,
 }
 
 var XMsgCommand uintptr
@@ -42672,7 +42612,7 @@ var XSuppressLRM int32
 
 var XSynthesizeTags int32
 
-var XSysDir = __ccgo_ts + 12428
+var XSysDir = __ccgo_ts + 12332
 
 var XSysTime = -int32(1)
 
@@ -42817,7 +42757,7 @@ var XTokArray = [92]TToken{
 		Ftype1:  int32(_T_Ordinal),
 	},
 	23: {
-		Fname:   __ccgo_ts + 16417,
+		Fname:   __ccgo_ts + 16407,
 		FMinLen: uint8(5),
 		Ftype1:  int32(_T_Flush),
 	},
@@ -43049,7 +42989,7 @@ var XTokArray = [92]TToken{
 		Ftype1:  int32(_T_PushVars),
 	},
 	66: {
-		Fname:   __ccgo_ts + 13451,
+		Fname:   __ccgo_ts + 13441,
 		FMinLen: uint8(3),
 		Ftype1:  int32(_T_Rem),
 	},
@@ -43305,20 +43245,20 @@ var Xcwts = [76]uint8{
 var Xtranslatables = [97]uintptr{
 	0:  __ccgo_ts + 2417,
 	1:  __ccgo_ts + 2337,
-	2:  __ccgo_ts + 22130,
-	3:  __ccgo_ts + 13152,
-	4:  __ccgo_ts + 21820,
-	5:  __ccgo_ts + 23895,
-	6:  __ccgo_ts + 22025,
+	2:  __ccgo_ts + 22126,
+	3:  __ccgo_ts + 13142,
+	4:  __ccgo_ts + 21816,
+	5:  __ccgo_ts + 23891,
+	6:  __ccgo_ts + 22021,
 	7:  __ccgo_ts + 6317,
 	8:  __ccgo_ts + 6207,
-	9:  __ccgo_ts + 21803,
+	9:  __ccgo_ts + 21799,
 	10: __ccgo_ts + 6175,
-	11: __ccgo_ts + 6452,
+	11: __ccgo_ts + 6442,
 	12: __ccgo_ts + 6043,
 	13: __ccgo_ts + 18814,
-	14: __ccgo_ts + 9057,
-	15: __ccgo_ts + 22491,
+	14: __ccgo_ts + 9047,
+	15: __ccgo_ts + 22487,
 	16: __ccgo_ts + 21374,
 	17: __ccgo_ts + 2025,
 	18: __ccgo_ts + 18475,
@@ -43327,27 +43267,27 @@ var Xtranslatables = [97]uintptr{
 	21: __ccgo_ts + 4081,
 	22: __ccgo_ts + 21498,
 	23: __ccgo_ts + 21552,
-	24: __ccgo_ts + 12962,
+	24: __ccgo_ts + 12952,
 	25: __ccgo_ts + 5115,
-	26: __ccgo_ts + 21800,
+	26: __ccgo_ts + 21796,
 	27: __ccgo_ts + 21317,
 	28: __ccgo_ts + 21024,
 	29: __ccgo_ts + 20716,
 	30: __ccgo_ts + 3145,
-	31: __ccgo_ts + 13123,
+	31: __ccgo_ts + 13113,
 	32: __ccgo_ts + 4417,
-	33: __ccgo_ts + 21903,
+	33: __ccgo_ts + 21899,
 	34: __ccgo_ts + 5185,
 	35: __ccgo_ts + 5257,
-	36: __ccgo_ts + 8057,
-	37: __ccgo_ts + 22240,
+	36: __ccgo_ts + 8047,
+	37: __ccgo_ts + 22236,
 	38: __ccgo_ts + 18336,
 	39: __ccgo_ts + 3100,
 	40: __ccgo_ts + 21682,
 	41: __ccgo_ts + 18238,
-	42: __ccgo_ts + 23834,
+	42: __ccgo_ts + 23830,
 	43: __ccgo_ts + 21415,
-	44: __ccgo_ts + 22418,
+	44: __ccgo_ts + 22414,
 	45: __ccgo_ts + 6084,
 	46: __ccgo_ts + 6140,
 	47: __ccgo_ts + 6113,
@@ -43356,24 +43296,24 @@ var Xtranslatables = [97]uintptr{
 	50: __ccgo_ts + 2514,
 	51: __ccgo_ts + 2553,
 	52: __ccgo_ts + 2593,
-	53: __ccgo_ts + 6476,
-	54: __ccgo_ts + 6552,
+	53: __ccgo_ts + 6466,
+	54: __ccgo_ts + 6542,
 	55: __ccgo_ts + 6277,
 	56: __ccgo_ts + 5450,
-	57: __ccgo_ts + 22701,
+	57: __ccgo_ts + 22697,
 	58: __ccgo_ts + 2309,
 	59: __ccgo_ts + 21745,
 	60: __ccgo_ts + 18200,
-	61: __ccgo_ts + 23794,
+	61: __ccgo_ts + 23790,
 	62: __ccgo_ts + 1083,
 	63: __ccgo_ts + 5369,
-	64: __ccgo_ts + 22538,
+	64: __ccgo_ts + 22534,
 	65: __ccgo_ts + 3210,
 	66: __ccgo_ts + 3270,
 	67: __ccgo_ts + 3329,
 	68: __ccgo_ts + 21624,
 	69: __ccgo_ts + 3055,
-	70: __ccgo_ts + 8993,
+	70: __ccgo_ts + 8983,
 	71: __ccgo_ts + 3437,
 	72: __ccgo_ts + 3488,
 	73: __ccgo_ts + 3385,
@@ -43382,21 +43322,21 @@ var Xtranslatables = [97]uintptr{
 	76: __ccgo_ts + 4254,
 	77: __ccgo_ts + 4365,
 	78: __ccgo_ts + 3543,
-	79: __ccgo_ts + 22601,
+	79: __ccgo_ts + 22597,
 	80: __ccgo_ts + 18408,
 	81: __ccgo_ts + 5907,
 	82: __ccgo_ts + 4553,
-	83: __ccgo_ts + 22313,
-	84: __ccgo_ts + 22365,
+	83: __ccgo_ts + 22309,
+	84: __ccgo_ts + 22361,
 	85: __ccgo_ts + 5099,
 	86: __ccgo_ts + 4166,
-	87: __ccgo_ts + 22778,
+	87: __ccgo_ts + 22774,
 	88: __ccgo_ts + 5566,
 	89: __ccgo_ts + 4948,
 	90: __ccgo_ts + 5681,
-	91: __ccgo_ts + 8568,
-	92: __ccgo_ts + 8238,
-	93: __ccgo_ts + 21858,
+	91: __ccgo_ts + 8558,
+	92: __ccgo_ts + 8228,
+	93: __ccgo_ts + 21854,
 	94: __ccgo_ts + 5103,
 	95: __ccgo_ts + 4528,
 	96: libc.UintptrFromInt32(0),
@@ -43406,4 +43346,4 @@ var Xwatch_fd = -int32(1)
 
 var __ccgo_ts = (*reflect.StringHeader)(unsafe.Pointer(&__ccgo_ts1)).Data
 
-var __ccgo_ts1 = "\x00+\x00|\x00-\x00\x1b(0\x00\x1b(B\x00v\x00k\x00u\x00w\x00n\x00m\x00x\x00l\x00t\x00j\x00q\x00┴\x00┐\x00┤\x00┬\x00┼\x00└\x00│\x00┌\x00├\x00┘\x00─\x00\x1b[0;30m\x00\x1b[0;34m\x00\x1b[0;32m\x00\x1b[0;36m\x00\x1b[0;31m\x00\x1b[0;35m\x00\x1b[0;33m\x00\x1b[0;37m\x00\x1b[30;1m\x00\x1b[34;1m\x00\x1b[32;1m\x00\x1b[36;1m\x00\x1b[31;1m\x00\x1b[35;1m\x00\x1b[33;1m\x00\x1b[37;1m\x00\x1b[0;40m\x00\x1b[0;44m\x00\x1b[0;42m\x00\x1b[0;46m\x00\x1b[0;41m\x00\x1b[0;45m\x00\x1b[0;43m\x00\x1b[0;47m\x00🌑\x00🌓\x00🌕\x00🌗\x00%s\x00\u200e\x00\\b\x00\\f\x00\\n\x00\\r\x00\\t\x00\\\"\x00\\\\\x00\\u%04x\x00%c\x00\"\x00\":%d,\x00\":\"\x00\",\x00\":\"%04d-%02d-%02d\",\x00\":\"%04d-%02d-%02dT%02d:%02d\",\x00\":\"%02d:%02d\",\x00\x1b[0m\x00\x1b[48;5;%dm\x00\x1b[38;5;%dm\x00\x1b[48;2;%d;%d;%dm\x00\x1b[38;2;%d;%d;%dm\x00%d %d %d\x00%d\x00%d %*d %*d %27[^\x01]\x00%s %s\x00utf-8\x00[\n\x00\n]\n\x00# translations\n\x00\n\x00,\n\x00{\n\"caltype\":\"weekly\",\x00\"translations\":\x00,\x00\"dates\":[\x00{\"dayname\":\"%s\",\"date\":\"%04d-%02d-%02d\",\"year\":%d,\"month\":\"%s\",\"day\":%d}\x00],\"entries\":[\x00\n]\n}\x00%d %s %s %s \x00%d %s %s \x00%d %s \x00\x1b[1m\x00%s\n\x00# rem2ps begin\x00# rem2ps2 begin\x00{\n\x00%s %d %d %d %d\n\x00 %s\x00caltype\x00monthly\x00monthname\x00year\x00daysinmonth\x00firstwkday\x00mondayfirst\x00\"daynames\":[\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"],\x00%s %d\n\x00prevmonthname\x00daysinprevmonth\x00prevmonthyear\x00nextmonthname\x00daysinnextmonth\x00nextmonthyear\x00\"entries\":[\n\x00# rem2ps end\x00# rem2ps2 end\x00]\n}\x00%d \x00 \x00\x1b]8;;%s\x1b\\\x00\x1b]8;;\x1b\\\x00%s %s: %s\n\x00%s: %s\x0005.00.03\x00Unrecognized command; interpreting as REM\x00%s %d\x00PostScript\x00PSFile\x00%d %d %d \x00COLOR\x00SHADE\x00WEEK\x00%31[^\x01]\x00FORMATTED\x00COLOUR\x00MOON\x00calprefix\x00calprefix(%d)\x00calsuffix\x00calsuffix(%d)\x00 *\x00 %s \x00 * \x00* \x00time\x00time_in_tz\x00nexttime\x00nextdtime\x00tdelta\x00trep\x00duration\x00url\x00\"info\":{\x00},\x00\"wd\":[\x00\"%s\"\x00],\x00d\x00y\x00is_todo\x00complete_through\x00back\x00delta\x00rep\x00\"trigbase\":\"%04d-%02d-%02d\",\x00\"localomit\":[\x00skip\x00SKIP\x00BEFORE\x00AFTER\x00until\x00once\x00scanfrom\x00max_overdue\x00from\x00priority\x00eventstart\x00eventstart_in_tz\x00eventduration\x00maybe_uncomputable\x00noqueue\x00sched\x00warn\x00omitfunc\x00addomit\x00tags\x00tz\x00filename\x00lineno\x00lineno_start\x00passthru\x00nonconst_expr\x00if_depth\x00r\x00g\x00b\x00rawbody\x00%\"\x00\"calendar_body\":\"\x00\"plain_body\":\"\x00\"body\":\"\x00# fileinfo %d %s\n\x00{\"date\":\"%04d-%02d-%02d\",\x00}\x00%04d/%02d/%02d\x00+%d\x00pm\x00am\x00%d%c%02d%s-%d%c%02d%s%s \x00%02d%c%02d-%02d%c%02d%s \x00%d%c%02d%.64s \x00%02d%c%02d \x00__syn__%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\x00Unable to initialize function hash table: Out of memory.  Exiting.\n\x00Error adjusting trigger to local time zone\x00%s(%s): Trig(tz_adj %s) = %s, %d %s, %d AT %02d:%02d\x00 DURATION %02d:%02d\x00ExitTimezone called without EnterTimezone!!!\n\x00TZ exit %s: %04d-%02d-%02d %02d:%02d\n\x00EnterTimezone called twice in a row!!!\n\x00TZ enter %s: %04d-%02d-%02d %02d:%02d\n\x00WARN\x00Undefined %s function: `%s'\x00%s function `%s' defined at %s(%s) should take 1 argument but actually takes %d\x00%s function `%s' defined at %s(%s) does not use its argument\x00trigdate\x00trigdatetime\x00T\x00Td\x00Tm\x00Tw\x00Ty\x00SATISFY: constant 0 will never be true\x00SATISFY: constant \"\" will never be true\x00SATISFY: expression has no reference to trigdate() or $T...\x00#!P! Cannot parse next line\x00#!P: Cannot purge SATISFY-type reminders\x00%s: %s\n\x00#!P! Problem calculating trigger date\x00#!P: Next line may have expired, but contains non-constant expression\x00#!P: or a relative SCANFROM clause\x00#!P: Next line has expired, but contains expression...  please verify\x00#!P: Expired: %s\n\x00},\n\x00%s: `%s'\x00COMPLETE-THROUGH\x00`%d' is not recognized as a year (%d-%d) or a day number (1-31)\x00Warning: OMIT is ignored if you use OMITFUNC\x00OMITFUNC counts as a non-constant expression\x00Missing REM type; assuming MSG\x00Weekday name(s) required\x0006.01.03\x00Warning: Consider using SCANFROM -28 with recurring ADDOMIT\x00Warning: Consider using SCANFROM -7 with recurring ADDOMIT\x00Warning: Consider using SCANFROM with recurring ADDOMIT\x00Warning: UNTIL/THROUGH date earlier than start date\x00Warning: UNTIL/THROUGH date earlier than FROM date\x00Warning: UNTIL/THROUGH date earlier than SCANFROM date\x00Warning: Useless use of UNTIL with fully-specified date and no *rep\x00SCHED\x00OMITFUNC\x00UNTIL\x00THROUGH\x00SCANFROM\x00FROM\x00Relative SCANFROM counts as a non-constant expression\x00{\"banner\":\"\x00%04d/%02d/%02d \x00%s%s%s\n\x00msgprefix\x00msgprefix(%d)\x00msgsuffix\x00msgsuffix(%d)\x00NOTE endreminder\x00Delta: Bad OMITFUNC? %s\x00%s(%s): Trig(satisfied) = %s, %d %s, %d\x00 AT %02d:%02d\x00%s(%d)\x00%s: `%s': %s\x00MSG\x00MSF\x00RUN\x00CAL\x00PS\x00PSFILE\x00%s(1)\x00subst_%cx\x00subst_%c\x00subst_colonx\x00subst_bangx\x00subst_questionx\x00subst_atx\x00subst_hashx\x00subst_colon\x00subst_bang\x00subst_question\x00subst_at\x00subst_hash\x00s\x00Function `%s' defined at %s(%s) should take %d argument%s, but actually takes %d\x00day\x00days\x00ago\x00from now\x00subst_ampm\x00subst_ampm(%d)\x00subst_ordinal\x00subst_ordinal(%d)\x00st\x00nd\x00rd\x00th\x00Warning: Unterminated %%<...> substitution sequence\x00Warning: Unterminated %%(...) substitution sequence\x00subst_\x00Warning: Unterminated %%{...} substitution sequence\x00No substition function `%s' defined\x00(%d,'%04d-%02d-%02d',%02d:%02d)\x00%s(%d,'%04d-%02d-%02d',%02d:%02d)\x00tomorrow\x00yesterday\x00today\x0005.03.04\x00`%%%c' substitution sequence should not be used without an AT clause\x00on\x00%s, %d %s, %d\x00%s %s, %d %s, %d\x00in %d days' time\x00%d days ago\x00%02d%c%02d%c%04d\x00%s %02d%c%02d%c%04d\x00%s, %d %s\x00%s %s, %d %s\x00%02d%c%02d\x00%s %02d%c%02d\x00%s, %s %d%s, %d\x00%s %s, %s %d%s, %d\x00%s, %s %d%s\x00%s %s, %s %d%s\x00%04d%c%02d%c%02d\x00%s %04d%c%02d%c%02d\x00 (%s)\x00's\x00s'\x00%02d\x00%s, %d%s %s, %d\x00%s %s, %d%s %s, %d\x00%s, %d%s %s\x00%s %s, %d%s %s\x00done\x00now\x00%d %s%s %s\x00minute\x00hour\x00%d %s%s %s %d %s%s %s\x00and\x00%d %s %s\x00%d %s %s %d %s%s %s\x00%d %s, %d %s%s %s %d %s%s %s\x00%d%c%02d%s\x00%s %d%c%02d%s\x00at\x00is\x00was\x00are\x00were\x00 => \x00?\x00Global variable `%s' makes expression non-constant\x00%s(): %s\x00%s(\x00) => \x00Non-constant built-in function `%s' makes expression non-constant\x00const\x00Non-constant expression converted to constant by `const' built-in function\x00%s %s(\x00, \x00)\n\x00) => %s\n\x00%s(...) => %s\n\x00User function `%s' defined in non-constant context makes expression non-constant\x00System variable `$%s' makes expression non-constant\x00$%s\x00`%s': %s\x00==\x00!=\x00>=\x00<=\x00>\x00<\x00???\x00*\x00!\x00&&\x00||\x00%s `%c' (%s `%c%c'?)\x00did you mean\x00%s `%c'\x00)\x00%s `)'\x00+-*/%&|=<>!)\x00(\x00/\x00%\x00Parsed expression: \x00  => Error: %s\n\x00  => \x00  Unparsed: %s\n\x00^-- %s\n\x00here\x00arg[%d]\x00(%c%s\x00(%s\x00(%s \x00UNKNOWN_OPERATOR\x00\\x%02x\x00...\x00%04d%c%02d%c%02d%c%02d%c%02d\x00ERR\x00 Expression nodes allocated: %d\n\x00Expression nodes high-water: %d\n\x00    Expression nodes leaked: %d\n\x00     Parse level high-water: %d\n\x00join\x00\\x00 is not a valid escape sequence\x00Unable to initialize filename hash table: Out of memory.  Exiting.\n\x00Out of Memory!\n\x00-stdin-\x00.purged\x00Cannot open `%s' for writing: %s\x00__EOF__\x00Reading `%s': Found in cache\x00Reading `-': Reading stdin\x00Reading `%s': Opening file on disk\x00Can't open `%s' for reading: %s\x00Caching file `%s' in memory\x00a\x00Found cached directory listing for `%s'\x00Scanning directory `%s' for *.rem files\x00Caching directory `%s' listing\x00/*.rem\x00Reading command `%s': Found in cache\x00Executing `%s' for INCLUDECMD and caching as `%s'\x00/dev/null\x00Cannot execute `%s': %s\x00SECURITY: Won't read non-root-owned file or directory when running as root!\x00SECURITY: Won't read world-writable file or directory!\x00_\x00abs\x00access\x00adawn\x00adusk\x00ampm\x00ansicolor\x00args\x00asc\x00baseyr\x00catch\x00catcherr\x00char\x00choose\x00codepoint\x00coerce\x00columns\x00current\x00date\x00datepart\x00datetime\x00dawn\x00daysinmon\x00defined\x00dosubst\x00dusk\x00easterdate\x00escape\x00eval\x00evaltrig\x00filedate\x00filedatetime\x00filedir\x00getenv\x00hebdate\x00hebday\x00hebmon\x00hebyear\x00hex\x00htmlescape\x00htmlstriptags\x00iif\x00index\x00isany\x00isconst\x00isdst\x00isleap\x00isomitted\x00ivritmon\x00language\x00localtoutc\x00lower\x00max\x00mbchar\x00mbindex\x00mblower\x00mbpad\x00mbstrlen\x00mbsubstr\x00mbupper\x00min\x00minsfromutc\x00mon\x00monnum\x00moondate\x00moondatetime\x00moonphase\x00moonrise\x00moonrisedir\x00moonset\x00moonsetdir\x00moontime\x00multitrig\x00ndawn\x00ndusk\x00nonconst\x00nonomitted\x00ord\x00orthodoxeaster\x00ostype\x00pad\x00plural\x00psmoon\x00psshade\x00realcurrent\x00realnow\x00realtoday\x00rows\x00sgn\x00shell\x00shellescape\x00slide\x00soleq\x00stdout\x00strlen\x00substr\x00sunrise\x00sunset\x00timepart\x00timezone\x00trig\x00trigback\x00trigbase\x00trigcompletethrough\x00trigdelta\x00trigduration\x00trigeventduration\x00trigeventstart\x00trigeventstarttz\x00trigfrom\x00trigger\x00triginfo\x00trigistodo\x00trigmaxoverdue\x00trigpriority\x00trigrep\x00trigscanfrom\x00trigtags\x00trigtime\x00trigtimedelta\x00trigtimerep\x00trigtimetz\x00trigtz\x00triguntil\x00trigvalid\x00typeof\x00tzconvert\x00upper\x00utctolocal\x00value\x00version\x00weekno\x00wkday\x00wkdaynum\x00int\x00string\x00coerce(): Invalid type `%s'\x00coerce(): Cannot convert %s to %s\x00%X\x00AM\x00PM\x00%04d%c%02d%c%02d%c12%c%02d\x0012%c%02d\x00%04d%c%02d%c%02d%c%d%c%02d\x00%d%c%02d\x00ordx\x00ordx(%d)\x00%d%s\x00isconst(\x00isany(\x00, ?\x00catch(\x00, ?) => \x00*, \x00*) => \x00choose(\x00choose(): %s\x0006.03.02\x00UNIX\x00TTY\x00UNKNOWN\x00BLOCKDEV\x00CHARDEV\x00DIR\x00PIPE\x00SYMLINK\x00FILE\x00SOCKET\x00value(\x00?) => \x00Nonexistence of global variable `%s' makes value() non-constant\x00%d %s %d AT %02d:%02d\x00%d %s %d\x00iif(\x00.\x00INT\x00DATE\x00TIME\x00STRING\x00DATETIME\x00English\x00\\a\x00\\v\x00&lt;\x00&gt;\x00&amp;\x00%Z\x00TZ\x00UTC\x0003.01.02\x00psshade() is deprecated; use SPECIAL SHADE instead.\x00/_A LineWidth 2 div def \x00_A _A moveto \x00BoxWidth _A sub _A lineto BoxWidth _A sub BoxHeight _A sub lineto \x00_A BoxHeight _A sub lineto closepath %d 100 div setgray fill 0.0 setgray\x00_A BoxHeight _A sub lineto closepath %d 100 div %d 100 div %d 100 div setrgbcolor fill 0.0 setgray\x00psmoon() is deprecated; use SPECIAL MOON instead.\x00DaySize 2 div\x00EntrySize\x00gsave 0 setgray newpath Border %s add BoxHeight Border sub %s sub\x00 %s 0 360 arc closepath\x00 fill\x00 stroke\x00 newpath Border %s add BoxHeight Border sub %s sub\x00 %s 90 270 arc closepath fill\x00 %s 270 90 arc closepath fill\x00 Border %s add %s add Border add BoxHeight border sub %s sub %s sub moveto /EntryFont findfont %s scalefont setfont (%s) show\x00 grestore\x00Warning: SCANFROM is ignored in two-argument form of evaltrig()\x00Cannot use AT clause in multitrig() function\x00/dev/tty\x00\n# Built-in Functions\n\n\x00Ok\x00Missing ']'\x00Missing quote\x00Expression too complex\x00Invalid month name\x00Missing ')'\x00Undefined function\x00Illegal character\x00Invalid weekday name\x00Out of memory\x00Ill-formed number\x00Warning: PUSH-VARS without matching POP-VARS\x00POP-VARS without matching PUSH-VARS\x00Can't coerce\x00Type mismatch\x00Date overflow\x00POP-FUNCS without matching PUSH-FUNCS\x00Division by zero\x00Undefined variable\x00Unexpected end of line\x00Unexpected end of file\x00I/O error\x00Warning: PUSH-FUNCS without matching POP-FUNCS\x00Internal error\x00Bad date specification\x00Not enough arguments\x00Too many arguments\x00Ill-formed time\x00Number too high\x00Number too low\x00Can't open file\x00INCLUDE nested too deeply (max. 9)\x00Parse error\x00Can't compute trigger\x00Too many nested IFs\x00ELSE with no matching IF\x00ENDIF with no matching IF\x00Can't OMIT every weekday\x00Extraneous token(s) on line\x00POP-OMIT-CONTEXT without matching PUSH-OMIT-CONTEXT\x00RUN disabled\x00Domain error\x00Invalid identifier\x00Too many recursive function calls\x00Cannot modify system variable\x00C library function can't represent date/time\x00Attempt to redefine built-in function\x00Can't nest function definition in expression\x00Must fully specify date to use repeat factor\x00Year specified twice\x00Month specified twice\x00Day specified twice\x00Unknown token\x00Must specify month in OMIT command\x00TODO specified twice\x00Too many full OMITs (max. 1000)\x00Warning: PUSH-OMIT-CONTEXT without matching POP-OMIT-CONTEXT\x00Error reading input\x00Expecting end-of-line\x00Invalid Hebrew date\x00iif(): odd number of arguments required\x00Warning: Missing ENDIF\x00Expecting comma\x00Weekday specified twice\x00Only use one of BEFORE, AFTER or SKIP\x00Can't nest MSG, MSF, RUN, etc. in expression\x00Repeat value specified twice\x00Delta value specified twice\x00Back value specified twice\x00ONCE keyword used twice. (Hah.)\x00Expecting time after AT\x00THROUGH/UNTIL keyword used twice\x00Incomplete date specification\x00FROM/SCANFROM keyword used twice\x00Variable\x00Value\x00*UNDEFINED*\x00Entering UserFN\x00Leaving UserFN\x00Expired\x00fork() failed - can't do queued reminders\x00Illegal system date: Year is less than %d\x00Unknown debug flag '%c'\x00Unknown option '%c'\x00Unknown user '%s'\x00Could not change gid to %d\x00Could not change uid to %d\x00Out of memory for environment\x00Missing '=' sign\x00Missing variable name\x00Missing expression\x00COMPLETE-THROUGH specified twice\x00Remind: '-i' option: %s\x00No reminders.\x00%d reminder(s) queued for later today.\x00Expecting number\x00Undefined WARN function\x00Can't convert between time zones\x00No files matching *.rem\x00String too long\x00Time specified twice\x00Cannot specify DURATION without specifying AT\x00Expecting weekday name\x00Duplicate argument name\x00Expression evaluation is disabled\x00Time limit for expression evaluation exceeded\x00COMPLETE-THROUGH specified without TODO\x00MAX-OVERDUE specified twice\x00MAX-OVERDUE specified without TODO\x00TZ specified twice\x00TZ specified for non-timed reminder\x00Invalid multibyte sequence\x00Maximum expression complexity exceeded\x00Expecting operator or end-of-expression\x00Expecting constant, variable, function call or (expression)\x00Invalid value for system variable\x00Attempt to unset built-in function\x00Attempt to PUSH built-in function\x00INCLUDECMD produced too much output\x00Input line too long\x00Too many cached lines\x00January\x00February\x00March\x00April\x00May\x00June\x00July\x00August\x00September\x00October\x00November\x00December\x00\"')]}>\x00.?!\x00Ottawa\x00none\x00Monday\x00Tuesday\x00Wednesday\x00Thursday\x00Friday\x00Saturday\x00Sunday\x00/usr/local/share/remind\x00  Entries: %lu; Buckets: %lu; Non-empty Buckets: %lu\n\x00  Maxlen: %lu; Minlen: %lu; Avglen: %.3f; Stddev: %.3f; Avg nonempty len: %.3f\n\x00  Growths: %lu; Shrinks: %lu\n\x00Tishrey\x00Heshvan\x00Kislev\x00Tevet\x00Shvat\x00Adar A\x00Adar B\x00Nisan\x00Iyar\x00Sivan\x00Tamuz\x00Av\x00Elul\x00Adar\x00תשרי\x00חשוון\x00כסלו\x00טבת\x00שבט\x00אדר א'\x00אדר ב'\x00ניסן\x00אייר\x00סיון\x00תמוז\x00אב\x00אלול\x00אדר\x00Tishri\x00Tishrei\x00Cheshvan\x00Kheshvan\x00Shevat\x00Tammuz\x00Adar 1\x00Adar I\x00אדר א\x00אדר 1\x00אדר I\x00Adar 2\x00Adar II\x00אדר ב\x00אדר 2\x00אדר II\x00Iyyar\x00GetValidHebDate: Bad adarbehave value %d\x00GetValidHebDate: (1) software error! %d\x00GetValidHebDate: (2) software error! %d\x00GetValidHebDate: (3) software error! %d\x00No Adar A in %d\x00%d %s %d: %s\x00%s(%d): IF without ENDIF\x00Illegal date on command line\n\x00REMIND_FILE\x00DOTREMINDERS\x00HOME\x00HOME environment variable not set.  Unable to determine reminder file.\n\x00/.reminders\x00\nRemind should not be installed set-uid or set-gid.\nCHECK YOUR SYSTEM SECURITY.\n\x00Out of memory!\n\x00Reminders for %w, %d%s %m, %y%o:\x00rem\x00Invoked with a NULL argv[0]; bailing because that's just plain bizarre.\n\x00%s: -@n,m,b: n must be 0, 1 or 2 (assuming 0)\n\x00%s: -@n,m,b: m must be t, 0, 1 or 2 (assuming 2)\n\x00%s: -@n,m,b: b must be 0 or 1 (assuming 0)\n\x00weekly\x00%s: `-wt': Cannot open /dev/tty: %s\n\x00Could not evaluate command-line trigger: %s\n\x00%s: `%s'\n\x00\nREMIND %s Copyright (C) 1992-2026 Dianne Skoll\n\x00Usage: remind [options] filename [date] [time] [*rep]\n\x00Options:\n\x00 -n     Output next occurrence of reminders in simple format\n\x00 -r     Disable RUN directives\n\x00 -@[n,m,b] Colorize COLOR/SHADE reminders\n\x00 -c[a][n] Produce a calendar for n (default 1) months\n\x00 -c[a]+[n] Produce a calendar for n (default 1) weeks\n\x00 -w[n[,p[,s]]]  Specify width, padding and spacing of calendar\n\x00 -s[a][+][n] Produce `simple calendar' for n (1) months (weeks)\n\x00 -p[a][n] Same as -s, but input compatible with rem2ps\n\x00 -l     Prefix each simple calendar line with line number and filename comment\n\x00 -v     Verbose mode\n\x00 -o     Ignore ONCE directives\n\x00 -t[n]  Trigger all future (or those within `n' days)\n\x00 -h     `Hush' mode - be very quiet\n\x00 -a     Don't trigger timed reminders immediately - just queue them\n\x00 -q     Don't queue timed reminders\n\x00 -f     Trigger timed reminders by staying in foreground\n\x00 -z[n]  Enter daemon mode, waking every n (1) minutes.\n\x00 -d...  Debug: See man page for details\n\x00 -e     Divert messages normally sent to stderr to stdout\n\x00 -b[n]  Time format for cal: 0=am/pm, 1=24hr, 2=none\n\x00 -x[n]  Iteration limit for SATISFY clause (def=1000)\n\x00 -kcmd  Run `cmd' for MSG-type reminders\n\x00 -g[dddd] Sort reminders by date, time, priority, and 'timedness'\n\x00 -ivar=val Initialize var to val and preserve var\n\x00 -m     Start calendar with Monday rather than Sunday\n\x00 -y     Synthesize tags for tagless reminders\n\x00 -j[n]  Run in 'purge' mode.  [n = INCLUDE depth]\n\x00\nLong Options:\n\x00 --version                Print Remind version\n\x00 --hide-completed-todos   Don't show completed todos on calendar\n\x00 --only-todos             Only issue TODO reminders\n\x00 --only-events            Do not issue TODO reminders\n\x00 --json                   Use JSON output instead of plain-text\n\x00 --max-execution-time=n   Limit execution time to n seconds\n\x00 --max-expr-complexity=n  Limit expression evaluation to n nodes per line\n\x00 --print-config-cmd       Print ./configure cmd used to build Remind\n\x00 --print-errs             Print all possible error messages\n\x00 --print-tokens           Print all possible Remind tokens\n\x00 --no-fmt                 Do not format FMT-style reminders\n\x00 --file=filename          Use option to set file\n\x00\nRemind home page: %s\n\x00https://dianne.skoll.ca/projects/remind/\x00HOME=%s\x00SHELL=%s\x00USER=%s\x00LOGNAME=%s\x00-i option: %s: %s\n\x00Too many trusted users (%d max)\n\x00test\x00Enabling test mode: This is meant for the acceptance test.\nDo not use --test in production.\nIn test mode, the system time is fixed at 2025-01-06@19:00\n\x00no-fmt\x00only-todos\x00remind: Cannot combine --only-todos and --only-events\n\x00only-events\x00flush\x00json\x00print-config-cmd\x00./configure --prefix=/usr/local\x00print-errs\x00hide-completed-todos\x00print-tokens\x00max-expr-complexity=%lu\x00file=\x00%s: --file= can only be used once (ignoring second)\n\x00%s: file= requires an argument\n\x00max-execution-time=%d\x00%s: --max-execution-time must be non-negative\n\x00%s: Unknown long option --%s\n\x00\x1b]11;?\x1b\\\x00rgb:%x/%x/%x\x00===== S T A T I S T I C S =====\n\x00DynBuf Mallocs: %lu mallocs; %lu bytes\n\x00\nVariable hash table statistics:\n\x00\nFunction hash table statistics:\n\x00\nDedupe hash table statistics:\n\x00\nTranslation hash table statistics:\n\x00 Max expr node evals / line: %lu (%s:%d)\n\x00 Max expr node evals / line: %lu\n\x00      Total expr node evals: %lu\n\x00\n\nmax-execution-time exceeded.\n\n\x00{\"noreminders\":\"\x00}\n\x00]\n\x00%s: `%s': %s.\n\x00#!P\x00#!P! Could not parse next line: %s\n\x00%s(%d): \x00%s(%d:%d): \x00       \x00/etc/localtime\x00#!P: The next IF evaluated false...\x00#!P: REM statements in IF block not checked for purging.\x00#!P: The previous IF evaluated true.\x00#!P: REM statements in ELSE block not checked for purging\x00#!P: The next IFTRIG did not trigger.\x00#!P: REM statements in IFTRIG block not checked for purging.\x0005.02.03\x00ON\x00OFF\x00INVALID_WKDAY\x00INVALID_MON\x00Warning: Unable to save ONCE timestamp to %s: %s\x00%d\n# This is a timestamp file used by Remind to track ONCE reminders.\n# Do not edit or delete it.\n\x00i\x00span\x00??? Software error!  No done scratchpad in MarkupToAnsi\x00\x1b[3m\x00\x1b[9m\x00\x1b[4m\x00Unclosed formatting tags\x00color = \"#%2x%2x%2x\" %n\x00fgcolor = \"#%2x%2x%2x\" %n\x00foreground = \"#%2x%2x%2x\" %n\x00bgcolor = \"#%2x%2x%2x\" %n\x00background = \"#%2x%2x%2x\" %n\x00Unknown attribute in <span> tag at %s\x00Markup tags and attribute names should be all lower-case\x00Tag is missing closing >\x00Unclosed quote in tag <%s>\x00span \x00Unsupported formatting tag <%s>\x00</%s> tag without any opening tag\x00<%s> tag closed by </%s>\x00\x1b]8;;\x00\x1b\\\x00Unmatched PUSH-OMIT-CONTEXT at %s(%d)\x00POP-OMIT-CONTEXT at %s:%d matches PUSH-OMIT-CONTEXT in different file: %s:%d\x00%s('%04d-%02d-%02d')\x00OMIT: UNTIL not allowed; did you mean THROUGH?\x00%s: `%s' (OMIT)\x0004.02.09\x00You have OMITted everything!  The space-time continuum is at risk.\x00Error: THROUGH date earlier than start date\x00Global Full OMITs (%d of maximum allowed %d):\n\x00\tNone.\n\x00\t%04d%c%02d%c%02d\n\x00Global Partial OMITs (%d of maximum allowed %d):\n\x00\t%02d%c%02d\n\x00Global Weekday OMITs:\n\x00\t%s\n\x00{\x00response\x00queued\x00nqueued\x00\"command\":\"STATUS\"}\n\x00NOTE queued %d\n\x00{\"response\":\"reread\",\"command\":\"SIGHUP\"}\n\x00NOTE SIGHUP\nNOTE reread\n\x00Cannot stat %s - not running as daemon!\x00{\"response\":\"reminder\",\x00qid\x00ttime\x00tdatetime\x00NOTE reminder %s\x00*\n\x00\"}\n\x00NOTE endreminder\n\x00Contents of AT queue:%s\x00Trigger: %02d%c%02d  Activate: %02d%c%02d  Rep: %d  Delta: %d  Sched: %s\x00(%d)\x00SPECIAL\x00Text: %s %s%s%s%s%s\x00To terminate program, send SIGQUIT (probably Ctrl-\\ on the keyboard.)%s\x00SCHED: Considering %04d%c%02d%c%02d%c%02d%c%02d\n\x00{\"response\":\"queue\",\"queue\":\x00[\x00rundisabled\x00ntrig\x00type\x00NO_TYPE\x00MSG_TYPE\x00RUN_TYPE\x00CAL_TYPE\x00SAT_TYPE\x00PS_TYPE\x00PSF_TYPE\x00MSF_TYPE\x00PASSTHRU_TYPE\x00body\x00\"}\x00]\x00,\"command\":\"QUEUE\"}\n\x00{\"response\":\"newdate\"}\n{\"response\":\"reread\",\"command\":\"newdate\"}\n\x00NOTE newdate\nNOTE reread\n\x00{\"response\":\"reread\",\"command\":\"inotify\"}\n\x00EXIT\n\x00STATUS\n\x00QUEUE\n\x00NOTE queue\n\x00 RunDisabled=%d ntrig=%d ttime=%02d:%02d nexttime=%02d:%02d delta=%d rep=%d duration=%d \x00NULL\x00%s %s %s\n\x00NOTE endqueue\n\x00JSONQUEUE\n\x00NOTE JSONQUEUE\n\x00NOTE ENDJSONQUEUE\n\x00TRANSLATE \x00translate\x00\"translation\":{\"\x00\"},\x00\"command\":\"TRANSLATE\"}\n\x00TRANSLATE_DUMP\n\x00NOTE TRANSLATE_DUMP\n\x00translate_dump\x00\"table\":\x00\nNOTE ENDTRANSLATE_DUMP\n\x00,\"command\":\"TRANSLATE_DUMP\"}\n\x00REREAD\n\x00{\"response\":\"reread\",\"command\":\"REREAD\"}\n\x00NOTE reread\n\x00DEL \x00DEL %d\x00{\"response\":\"error\",\"error\":\"Unknown command\",\"command\":\"\x00ERR Invalid daemon command: %s\x00sortbanner\x00sortbanner('%04d/%02d/%02d')\x00after\x00april\x00august\x00banner\x00before\x00cal\x00clear-omit-context\x00complete-through\x00completed-through\x00debug\x00december\x00do\x00dumpvars\x00else\x00endif\x00errmsg\x00exit\x00expr\x00february\x00first\x00fmt\x00fourth\x00frename\x00friday\x00fset\x00funset\x00if\x00iftrig\x00in\x00include\x00includecmd\x00info\x00january\x00july\x00june\x00last\x00lastday\x00lastworkday\x00march\x00max-overdue\x00may\x00maybe-uncomputable\x00monday\x00msf\x00msg\x00november\x00october\x00omit\x00pop-funcs\x00pop-omit-context\x00pop-vars\x00preserve\x00ps\x00psfile\x00push-funcs\x00push-omit-context\x00push-vars\x00return\x00run\x00satisfy\x00saturday\x00second\x00september\x00set\x00special\x00sunday\x00sysinclude\x00tag\x00third\x00through\x00thursday\x00todo\x00tuesday\x00unset\x00wednesday\x00%.*s\n\x00# Remind Tokens\n\n\x00\n# Month Names\n\n\x00\n# Weekdays\n\n\x00LANGID\x00 \"\"\n\x00# Translation table template\n\n\x00TRANSLATE \"LANGID\" \x00\n\n\x00BANNER %s\n\x00\n# Weekday Names\n\x00SET $%s \x00\n# Month Names\n\x00\n# Other Translation-related System Variables\n\x00\n# Error Messages\n\x00\n# Other Messages\n\x00[\"[\"]\x00# Translation table\n\x00:\x00Unable to initialize translation hash table: Out of memory.  Exiting.\n\x00en\x00Invalid translation: Both original and translated must have the same printf-style formatting sequences in the same order.\x00dump\x00clear\x00generate\x00#0- +'I%123456789.hlqLjzZt\x00NextSimpleTrig %s %d\x00%s(%s): Trig(adj) = %s, %d %s, %d\x00%s(%s): %s\n\x00%s(%s): Trig = %s, %d %s, %d\x00%s(%s): %s: %04d-%02d-%02d\n\x00Invalid INFO string: Must be of the form \"Header: Value\"\x00Duplicate INFO headers are not permitted\x00Potential function definition considered non-constant because of context\x00[cmdline]\x00Function `%s' redefined: previously defined at %s(%s)\x00Function definition considered non-constant because of context\x0003.00.04\x00Warning: Function name `%s...' truncated to `%s'\x0006.02.06\x00POP-FUNCS at %s:%d matches PUSH-FUNCS in different file: %s:%d\x00Unmatched PUSH-FUNCS at %s(%d)\x00/usr/share/zoneinfo\x00dup\x00In\x00Called from\x00    \x00%s(%s): [#%d] %s function `%s'\x00\n    [\x00remaining call frames omitted\x00%d:%d\x0006.01.05\x00No time zone file found for TZ `%s'... is it valid?\x00Unable to initialize variable hash table: Out of memory.  Exiting.\n\x00C\x00Accepting \"%s\" for $Latitude/$Longitude, but you should use the \"C\" locale decimal separator \".\" instead\x00%s is deprecated; use %s instead\x00$LatDeg\x00$Latitude\x00$LatMin\x00$LatSec\x00$LongDeg\x00$Longitude\x00$LongMin\x00$LongSec\x00%.8f\x00Not setting $OnceFile: Already processed a reminder with a ONCE clause\x00@\x00`%s' UNSET without being used (previous SET: %s:%d)\x00`%s' re-SET without being used (previous SET: %s:%d)\x00Potential variable assignment considered non-constant because of context\x00Do not use [] around expression in SET command\x00Variable assignment considered non-constant because of context\x00Warning: Variable name `%.*s...' truncated to `%.*s'\x00-c\x00%s  %s\n\n\x00%s  %s\n\x00%s  \x00 <preserved>\x00 <const>\x00The following variables were set, but not subsequently used:\x00\t%s - %s %s:%d\n\x00defined at\x00AddBlankLines\x00Ago\x00Am\x00And\x00At\x00CalcUTC\x00CalMode\x00CalType\x00Daemon\x00DateSep\x00DateTimeSep\x00DedupeReminders\x00DefaultColor\x00DefaultColour\x00DefaultDelta\x00DefaultPrio\x00DefaultTDelta\x00DeltaOverride\x00DontFork\x00DontQueue\x00DontTrigAts\x00EndSent\x00EndSentIg\x00ExpressionTimeLimit\x00FirstIndent\x00FoldYear\x00FormWidth\x00Fromnow\x00HideCompletedTodos\x00Hour\x00Hplu\x00HushMode\x00IgnoreOnce\x00InfDelta\x00IntMax\x00IntMin\x00Is\x00JSONMode\x00LatDeg\x00Latitude\x00LatMin\x00LatSec\x00Location\x00LongDeg\x00Longitude\x00LongMin\x00LongSec\x00MaxCachedLines\x00MaxFullOmits\x00MaxIncludeCmdLines\x00MaxLateMinutes\x00MaxLineLength\x00MaxPartialOmits\x00MaxSatIter\x00MaxStringLen\x00MinsFromUTC\x00Minute\x00Mplu\x00NextMode\x00Now\x00NumFullOmits\x00NumPartialOmits\x00NumQueued\x00NumTrig\x00On\x00OnceFile\x00ParseUntriggered\x00Pm\x00PrefixLineNo\x00PSCal\x00Repeat\x00RunOff\x00Shaded\x00SimpleCal\x00SortByDate\x00SortByPrio\x00SortByTime\x00SubsIndent\x00SuppressImplicitWarnings\x00SuppressLRM\x00SysInclude\x00Tb\x00TerminalBackground\x00TerminalHyperlinks\x00TimeSep\x00TimetIs64bit\x00Today\x00TodoFilter\x00Tomorrow\x00Tt\x00Tu\x00U\x00Ud\x00Um\x00UntimedFirst\x00Use256Colors\x00UseBGVTColors\x00UseTrueColors\x00UseVTColors\x00Uw\x00Uy\x00WarningLevel\x00Was\x00Unmatched PUSH-VARS at %s(%d)\x00%s: `$%s'\x00POP-VARS at %s:%d matches PUSH-VARS in different file: %s:%d\x00(Security note: $RunOff variable tested.)\x00$%s: Name too long\n\x00%25s  \x00%d\n\x00Error: %s\n\x00%-10d  \x00[%d, \x00Inf)\n\x00%d]\n\x00\n# System Variables\n\n\x00$%s\n\x00"
+var __ccgo_ts1 = "\x00+\x00|\x00-\x00\x1b(0\x00\x1b(B\x00v\x00k\x00u\x00w\x00n\x00m\x00x\x00l\x00t\x00j\x00q\x00┴\x00┐\x00┤\x00┬\x00┼\x00└\x00│\x00┌\x00├\x00┘\x00─\x00\x1b[0;30m\x00\x1b[0;34m\x00\x1b[0;32m\x00\x1b[0;36m\x00\x1b[0;31m\x00\x1b[0;35m\x00\x1b[0;33m\x00\x1b[0;37m\x00\x1b[30;1m\x00\x1b[34;1m\x00\x1b[32;1m\x00\x1b[36;1m\x00\x1b[31;1m\x00\x1b[35;1m\x00\x1b[33;1m\x00\x1b[37;1m\x00\x1b[0;40m\x00\x1b[0;44m\x00\x1b[0;42m\x00\x1b[0;46m\x00\x1b[0;41m\x00\x1b[0;45m\x00\x1b[0;43m\x00\x1b[0;47m\x00🌑\x00🌓\x00🌕\x00🌗\x00%s\x00\u200e\x00\\b\x00\\f\x00\\n\x00\\r\x00\\t\x00\\\"\x00\\\\\x00\\u%04x\x00%c\x00\"\x00\":%d,\x00\":\"\x00\",\x00\":\"%04d-%02d-%02d\",\x00\":\"%04d-%02d-%02dT%02d:%02d\",\x00\":\"%02d:%02d\",\x00\x1b[0m\x00\x1b[48;5;%dm\x00\x1b[38;5;%dm\x00\x1b[48;2;%d;%d;%dm\x00\x1b[38;2;%d;%d;%dm\x00%d %d %d\x00%d\x00%d %*d %*d %27[^\x01]\x00%s %s\x00utf-8\x00[\n\x00\n]\n\x00# translations\n\x00\n\x00,\n\x00{\n\"caltype\":\"weekly\",\x00\"translations\":\x00,\x00\"dates\":[\x00{\"dayname\":\"%s\",\"date\":\"%04d-%02d-%02d\",\"year\":%d,\"month\":\"%s\",\"day\":%d}\x00],\"entries\":[\x00\n]\n}\x00%d %s %s %s \x00%d %s %s \x00%d %s \x00\x1b[1m\x00%s\n\x00# rem2ps begin\x00# rem2ps2 begin\x00{\n\x00%s %d %d %d %d\n\x00 %s\x00caltype\x00monthly\x00monthname\x00year\x00daysinmonth\x00firstwkday\x00mondayfirst\x00\"daynames\":[\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"],\x00%s %d\n\x00prevmonthname\x00daysinprevmonth\x00prevmonthyear\x00nextmonthname\x00daysinnextmonth\x00nextmonthyear\x00\"entries\":[\n\x00# rem2ps end\x00# rem2ps2 end\x00]\n}\x00%d \x00 \x00\x1b]8;;%s\x1b\\\x00\x1b]8;;\x1b\\\x00%s %s: %s\n\x00%s: %s\x0005.00.03\x00Unrecognized command; interpreting as REM\x00%s %d\x00PostScript\x00PSFile\x00%d %d %d \x00COLOR\x00SHADE\x00WEEK\x00%31[^\x01]\x00FORMATTED\x00COLOUR\x00MOON\x00calprefix\x00calprefix(%d)\x00calsuffix\x00calsuffix(%d)\x00 *\x00 %s \x00 * \x00* \x00time\x00time_in_tz\x00nexttime\x00nextdtime\x00tdelta\x00trep\x00duration\x00url\x00\"info\":{\x00},\x00\"wd\":[\x00\"%s\"\x00],\x00d\x00y\x00is_todo\x00complete_through\x00back\x00delta\x00rep\x00\"trigbase\":\"%04d-%02d-%02d\",\x00\"localomit\":[\x00skip\x00SKIP\x00BEFORE\x00AFTER\x00until\x00once\x00scanfrom\x00max_overdue\x00from\x00priority\x00eventstart\x00eventstart_in_tz\x00eventduration\x00maybe_uncomputable\x00noqueue\x00sched\x00warn\x00omitfunc\x00addomit\x00tags\x00tz\x00filename\x00lineno\x00lineno_start\x00passthru\x00nonconst_expr\x00if_depth\x00r\x00g\x00b\x00rawbody\x00%\"\x00\"calendar_body\":\"\x00\"plain_body\":\"\x00\"body\":\"\x00# fileinfo %d %s\n\x00{\"date\":\"%04d-%02d-%02d\",\x00}\x00%04d/%02d/%02d\x00+%d\x00pm\x00am\x00%d%c%02d%s-%d%c%02d%s%s \x00%02d%c%02d-%02d%c%02d%s \x00%d%c%02d%.64s \x00%02d%c%02d \x00__syn__%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\x00Unable to initialize function hash table: Out of memory.  Exiting.\n\x00Error adjusting trigger to local time zone\x00%s(%s): Trig(tz_adj %s) = %s, %d %s, %d AT %02d:%02d\x00 DURATION %02d:%02d\x00ExitTimezone called without EnterTimezone!!!\n\x00TZ exit %s: %04d-%02d-%02d %02d:%02d\n\x00EnterTimezone called twice in a row!!!\n\x00TZ enter %s: %04d-%02d-%02d %02d:%02d\n\x00WARN\x00Undefined %s function: `%s'\x00%s function `%s' defined at %s(%s) should take 1 argument but actually takes %d\x00%s function `%s' defined at %s(%s) does not use its argument\x00trigdate\x00trigdatetime\x00T\x00Td\x00Tm\x00Tw\x00Ty\x00SATISFY: constant 0 will never be true\x00SATISFY: constant \"\" will never be true\x00SATISFY: expression has no reference to trigdate() or $T...\x00#!P! Cannot parse next line\x00#!P: Cannot purge SATISFY-type reminders\x00%s: %s\n\x00#!P! Problem calculating trigger date\x00#!P: Next line may have expired, but contains non-constant expression\x00#!P: or a relative SCANFROM clause\x00#!P: Next line has expired, but contains expression...  please verify\x00#!P: Expired: %s\n\x00},\n\x00%s: `%s'\x00COMPLETE-THROUGH\x00`%d' is not recognized as a year (%d-%d) or a day number (1-31)\x00Warning: OMIT is ignored if you use OMITFUNC\x00OMITFUNC counts as a non-constant expression\x00Missing REM type; assuming MSG\x00Weekday name(s) required\x0006.01.03\x00Warning: Consider using SCANFROM -28 with recurring ADDOMIT\x00Warning: Consider using SCANFROM -7 with recurring ADDOMIT\x00Warning: Consider using SCANFROM with recurring ADDOMIT\x00Warning: UNTIL/THROUGH date earlier than start date\x00Warning: UNTIL/THROUGH date earlier than FROM date\x00Warning: UNTIL/THROUGH date earlier than SCANFROM date\x00Warning: Useless use of UNTIL with fully-specified date and no *rep\x00SCHED\x00OMITFUNC\x00UNTIL\x00THROUGH\x00SCANFROM\x00FROM\x00Relative SCANFROM counts as a non-constant expression\x00{\"banner\":\"\x00%04d/%02d/%02d \x00%s%s%s\n\x00msgprefix\x00msgprefix(%d)\x00msgsuffix\x00msgsuffix(%d)\x00NOTE endreminder\x00Delta: Bad OMITFUNC? %s\x00%s(%s): Trig(satisfied) = %s, %d %s, %d\x00 AT %02d:%02d\x00%s(%d)\x00%s: `%s': %s\x00MSG\x00MSF\x00RUN\x00CAL\x00PS\x00PSFILE\x00%s(1)\x00subst_%cx\x00subst_%c\x00subst_colonx\x00subst_bangx\x00subst_questionx\x00subst_atx\x00subst_hashx\x00subst_colon\x00subst_bang\x00subst_question\x00subst_at\x00subst_hash\x00s\x00Function `%s' defined at %s(%s) should take %d argument%s, but actually takes %d\x00day\x00days\x00ago\x00from now\x00subst_ampm\x00subst_ampm(%d)\x00subst_ordinal\x00subst_ordinal(%d)\x00st\x00nd\x00rd\x00th\x00Warning: Unterminated %%<...> substitution sequence\x00Warning: Unterminated %%(...) substitution sequence\x00subst_\x00Warning: Unterminated %%{...} substitution sequence\x00No substition function `%s' defined\x00(%d,'%04d-%02d-%02d',%02d:%02d)\x00%s(%d,'%04d-%02d-%02d',%02d:%02d)\x00tomorrow\x00yesterday\x00today\x0005.03.04\x00`%%%c' substitution sequence should not be used without an AT clause\x00on\x00%s, %d %s, %d\x00%s %s, %d %s, %d\x00in %d days' time\x00%d days ago\x00%02d%c%02d%c%04d\x00%s %02d%c%02d%c%04d\x00%s, %d %s\x00%s %s, %d %s\x00%02d%c%02d\x00%s %02d%c%02d\x00%s, %s %d%s, %d\x00%s %s, %s %d%s, %d\x00%s, %s %d%s\x00%s %s, %s %d%s\x00%04d%c%02d%c%02d\x00%s %04d%c%02d%c%02d\x00 (%s)\x00's\x00s'\x00%02d\x00%s, %d%s %s, %d\x00%s %s, %d%s %s, %d\x00%s, %d%s %s\x00%s %s, %d%s %s\x00done\x00now\x00%d %s%s %s\x00minute\x00hour\x00%d %s%s %s %d %s%s %s\x00and\x00%d %s %s\x00%d %s %s %d %s%s %s\x00%d %s, %d %s%s %s %d %s%s %s\x00%d%c%02d%s\x00%s %d%c%02d%s\x00at\x00is\x00was\x00are\x00were\x00 => \x00?\x00Global variable `%s' makes expression non-constant\x00%s(): %s\x00%s(\x00) => \x00Non-constant built-in function `%s' makes expression non-constant\x00const\x00Non-constant expression converted to constant by `const' built-in function\x00%s %s(\x00, \x00)\n\x00) => %s\n\x00%s(...) => %s\n\x00User function `%s' defined in non-constant context makes expression non-constant\x00System variable `$%s' makes expression non-constant\x00$%s\x00`%s': %s\x00==\x00!=\x00>=\x00<=\x00>\x00<\x00???\x00*\x00!\x00&&\x00||\x00%s `%c' (%s `%c%c'?)\x00did you mean\x00%s `%c'\x00)\x00%s `)'\x00+-*/%&|=<>!)\x00(\x00/\x00%\x00Parsed expression: \x00  => Error: %s\n\x00  => \x00  Unparsed: %s\n\x00^-- %s\n\x00here\x00arg[%d]\x00(%c%s\x00(%s\x00(%s \x00UNKNOWN_OPERATOR\x00\\x%02x\x00...\x00%04d%c%02d%c%02d%c%02d%c%02d\x00ERR\x00 Expression nodes allocated: %d\n\x00Expression nodes high-water: %d\n\x00    Expression nodes leaked: %d\n\x00     Parse level high-water: %d\n\x00join\x00\\x00 is not a valid escape sequence\x00Unable to initialize filename hash table: Out of memory.  Exiting.\n\x00Out of Memory!\n\x00-stdin-\x00.purged\x00Cannot open `%s' for writing: %s\x00__EOF__\x00Reading `%s': Found in cache\x00Reading `-': Reading stdin\x00Reading `%s': Opening file on disk\x00Can't open `%s' for reading: %s\x00Caching file `%s' in memory\x00a\x00Found cached directory listing for `%s'\x00Scanning directory `%s' for *.rem files\x00Caching directory `%s' listing\x00/*.rem\x00Reading command `%s': Found in cache\x00Executing `%s' for INCLUDECMD and caching as `%s'\x00Cannot execute `%s': %s\x00SECURITY: Won't read non-root-owned file or directory when running as root!\x00SECURITY: Won't read world-writable file or directory!\x00_\x00abs\x00access\x00adawn\x00adusk\x00ampm\x00ansicolor\x00args\x00asc\x00baseyr\x00catch\x00catcherr\x00char\x00choose\x00codepoint\x00coerce\x00columns\x00current\x00date\x00datepart\x00datetime\x00dawn\x00daysinmon\x00defined\x00dosubst\x00dusk\x00easterdate\x00escape\x00eval\x00evaltrig\x00filedate\x00filedatetime\x00filedir\x00getenv\x00hebdate\x00hebday\x00hebmon\x00hebyear\x00hex\x00htmlescape\x00htmlstriptags\x00iif\x00index\x00isany\x00isconst\x00isdst\x00isleap\x00isomitted\x00ivritmon\x00language\x00localtoutc\x00lower\x00max\x00mbchar\x00mbindex\x00mblower\x00mbpad\x00mbstrlen\x00mbsubstr\x00mbupper\x00min\x00minsfromutc\x00mon\x00monnum\x00moondate\x00moondatetime\x00moonphase\x00moonrise\x00moonrisedir\x00moonset\x00moonsetdir\x00moontime\x00multitrig\x00ndawn\x00ndusk\x00nonconst\x00nonomitted\x00ord\x00orthodoxeaster\x00ostype\x00pad\x00plural\x00psmoon\x00psshade\x00realcurrent\x00realnow\x00realtoday\x00rows\x00sgn\x00shell\x00shellescape\x00slide\x00soleq\x00stdout\x00strlen\x00substr\x00sunrise\x00sunset\x00timepart\x00timezone\x00trig\x00trigback\x00trigbase\x00trigcompletethrough\x00trigdelta\x00trigduration\x00trigeventduration\x00trigeventstart\x00trigeventstarttz\x00trigfrom\x00trigger\x00triginfo\x00trigistodo\x00trigmaxoverdue\x00trigpriority\x00trigrep\x00trigscanfrom\x00trigtags\x00trigtime\x00trigtimedelta\x00trigtimerep\x00trigtimetz\x00trigtz\x00triguntil\x00trigvalid\x00typeof\x00tzconvert\x00upper\x00utctolocal\x00value\x00version\x00weekno\x00wkday\x00wkdaynum\x00int\x00string\x00coerce(): Invalid type `%s'\x00coerce(): Cannot convert %s to %s\x00%X\x00AM\x00PM\x00%04d%c%02d%c%02d%c12%c%02d\x0012%c%02d\x00%04d%c%02d%c%02d%c%d%c%02d\x00%d%c%02d\x00ordx\x00ordx(%d)\x00%d%s\x00isconst(\x00isany(\x00, ?\x00catch(\x00, ?) => \x00*, \x00*) => \x00choose(\x00choose(): %s\x0006.03.02\x00UNIX\x00TTY\x00UNKNOWN\x00BLOCKDEV\x00CHARDEV\x00DIR\x00PIPE\x00SYMLINK\x00FILE\x00SOCKET\x00value(\x00?) => \x00Nonexistence of global variable `%s' makes value() non-constant\x00%d %s %d AT %02d:%02d\x00%d %s %d\x00iif(\x00.\x00INT\x00DATE\x00TIME\x00STRING\x00DATETIME\x00English\x00\\a\x00\\v\x00&lt;\x00&gt;\x00&amp;\x00%Z\x00TZ\x00UTC\x0003.01.02\x00psshade() is deprecated; use SPECIAL SHADE instead.\x00/_A LineWidth 2 div def \x00_A _A moveto \x00BoxWidth _A sub _A lineto BoxWidth _A sub BoxHeight _A sub lineto \x00_A BoxHeight _A sub lineto closepath %d 100 div setgray fill 0.0 setgray\x00_A BoxHeight _A sub lineto closepath %d 100 div %d 100 div %d 100 div setrgbcolor fill 0.0 setgray\x00psmoon() is deprecated; use SPECIAL MOON instead.\x00DaySize 2 div\x00EntrySize\x00gsave 0 setgray newpath Border %s add BoxHeight Border sub %s sub\x00 %s 0 360 arc closepath\x00 fill\x00 stroke\x00 newpath Border %s add BoxHeight Border sub %s sub\x00 %s 90 270 arc closepath fill\x00 %s 270 90 arc closepath fill\x00 Border %s add %s add Border add BoxHeight border sub %s sub %s sub moveto /EntryFont findfont %s scalefont setfont (%s) show\x00 grestore\x00Warning: SCANFROM is ignored in two-argument form of evaltrig()\x00Cannot use AT clause in multitrig() function\x00/dev/tty\x00\n# Built-in Functions\n\n\x00Ok\x00Missing ']'\x00Missing quote\x00Expression too complex\x00Invalid month name\x00Missing ')'\x00Undefined function\x00Illegal character\x00Invalid weekday name\x00Out of memory\x00Ill-formed number\x00Warning: PUSH-VARS without matching POP-VARS\x00POP-VARS without matching PUSH-VARS\x00Can't coerce\x00Type mismatch\x00Date overflow\x00POP-FUNCS without matching PUSH-FUNCS\x00Division by zero\x00Undefined variable\x00Unexpected end of line\x00Unexpected end of file\x00I/O error\x00Warning: PUSH-FUNCS without matching POP-FUNCS\x00Internal error\x00Bad date specification\x00Not enough arguments\x00Too many arguments\x00Ill-formed time\x00Number too high\x00Number too low\x00Can't open file\x00INCLUDE nested too deeply (max. 9)\x00Parse error\x00Can't compute trigger\x00Too many nested IFs\x00ELSE with no matching IF\x00ENDIF with no matching IF\x00Can't OMIT every weekday\x00Extraneous token(s) on line\x00POP-OMIT-CONTEXT without matching PUSH-OMIT-CONTEXT\x00RUN disabled\x00Domain error\x00Invalid identifier\x00Too many recursive function calls\x00Cannot modify system variable\x00C library function can't represent date/time\x00Attempt to redefine built-in function\x00Can't nest function definition in expression\x00Must fully specify date to use repeat factor\x00Year specified twice\x00Month specified twice\x00Day specified twice\x00Unknown token\x00Must specify month in OMIT command\x00TODO specified twice\x00Too many full OMITs (max. 1000)\x00Warning: PUSH-OMIT-CONTEXT without matching POP-OMIT-CONTEXT\x00Error reading input\x00Expecting end-of-line\x00Invalid Hebrew date\x00iif(): odd number of arguments required\x00Warning: Missing ENDIF\x00Expecting comma\x00Weekday specified twice\x00Only use one of BEFORE, AFTER or SKIP\x00Can't nest MSG, MSF, RUN, etc. in expression\x00Repeat value specified twice\x00Delta value specified twice\x00Back value specified twice\x00ONCE keyword used twice. (Hah.)\x00Expecting time after AT\x00THROUGH/UNTIL keyword used twice\x00Incomplete date specification\x00FROM/SCANFROM keyword used twice\x00Variable\x00Value\x00*UNDEFINED*\x00Entering UserFN\x00Leaving UserFN\x00Expired\x00fork() failed - can't do queued reminders\x00Illegal system date: Year is less than %d\x00Unknown debug flag '%c'\x00Unknown option '%c'\x00Unknown user '%s'\x00Could not change gid to %d\x00Could not change uid to %d\x00Out of memory for environment\x00Missing '=' sign\x00Missing variable name\x00Missing expression\x00COMPLETE-THROUGH specified twice\x00Remind: '-i' option: %s\x00No reminders.\x00%d reminder(s) queued for later today.\x00Expecting number\x00Undefined WARN function\x00Can't convert between time zones\x00No files matching *.rem\x00String too long\x00Time specified twice\x00Cannot specify DURATION without specifying AT\x00Expecting weekday name\x00Duplicate argument name\x00Expression evaluation is disabled\x00Time limit for expression evaluation exceeded\x00COMPLETE-THROUGH specified without TODO\x00MAX-OVERDUE specified twice\x00MAX-OVERDUE specified without TODO\x00TZ specified twice\x00TZ specified for non-timed reminder\x00Invalid multibyte sequence\x00Maximum expression complexity exceeded\x00Expecting operator or end-of-expression\x00Expecting constant, variable, function call or (expression)\x00Invalid value for system variable\x00Attempt to unset built-in function\x00Attempt to PUSH built-in function\x00INCLUDECMD produced too much output\x00Input line too long\x00Too many cached lines\x00\"')]}>\x00none\x00Ottawa\x00Monday\x00Tuesday\x00Wednesday\x00Thursday\x00Friday\x00Saturday\x00Sunday\x00.?!\x00/usr/local/share/remind\x00January\x00February\x00March\x00April\x00May\x00June\x00July\x00August\x00September\x00October\x00November\x00December\x00  Entries: %lu; Buckets: %lu; Non-empty Buckets: %lu\n\x00  Maxlen: %lu; Minlen: %lu; Avglen: %.3f; Stddev: %.3f; Avg nonempty len: %.3f\n\x00  Growths: %lu; Shrinks: %lu\n\x00Tishrey\x00Heshvan\x00Kislev\x00Tevet\x00Shvat\x00Adar A\x00Adar B\x00Nisan\x00Iyar\x00Sivan\x00Tamuz\x00Av\x00Elul\x00Adar\x00תשרי\x00חשוון\x00כסלו\x00טבת\x00שבט\x00אדר א'\x00אדר ב'\x00ניסן\x00אייר\x00סיון\x00תמוז\x00אב\x00אלול\x00אדר\x00Tishri\x00Tishrei\x00Cheshvan\x00Kheshvan\x00Shevat\x00Tammuz\x00Adar 1\x00Adar I\x00אדר א\x00אדר 1\x00אדר I\x00Adar 2\x00Adar II\x00אדר ב\x00אדר 2\x00אדר II\x00Iyyar\x00GetValidHebDate: Bad adarbehave value %d\x00GetValidHebDate: (1) software error! %d\x00GetValidHebDate: (2) software error! %d\x00GetValidHebDate: (3) software error! %d\x00No Adar A in %d\x00%d %s %d: %s\x00%s(%d): IF without ENDIF\x00Illegal date on command line\n\x00REMIND_FILE\x00DOTREMINDERS\x00HOME\x00HOME environment variable not set.  Unable to determine reminder file.\n\x00/.reminders\x00\nRemind should not be installed set-uid or set-gid.\nCHECK YOUR SYSTEM SECURITY.\n\x00Out of memory!\n\x00Reminders for %w, %d%s %m, %y%o:\x00rem\x00Invoked with a NULL argv[0]; bailing because that's just plain bizarre.\n\x00%s: -@n,m,b: n must be 0, 1 or 2 (assuming 0)\n\x00%s: -@n,m,b: m must be t, 0, 1 or 2 (assuming 2)\n\x00%s: -@n,m,b: b must be 0 or 1 (assuming 0)\n\x00weekly\x00%s: `-wt': Cannot open /dev/tty: %s\n\x00Could not evaluate command-line trigger: %s\n\x00%s: `%s'\n\x00\nREMIND %s Copyright (C) 1992-2026 Dianne Skoll\n\x00Usage: remind [options] filename [date] [time] [*rep]\n\x00Options:\n\x00 -n     Output next occurrence of reminders in simple format\n\x00 -r     Disable RUN directives\n\x00 -@[n,m,b] Colorize COLOR/SHADE reminders\n\x00 -c[a][n] Produce a calendar for n (default 1) months\n\x00 -c[a]+[n] Produce a calendar for n (default 1) weeks\n\x00 -w[n[,p[,s]]]  Specify width, padding and spacing of calendar\n\x00 -s[a][+][n] Produce `simple calendar' for n (1) months (weeks)\n\x00 -p[a][n] Same as -s, but input compatible with rem2ps\n\x00 -l     Prefix each simple calendar line with line number and filename comment\n\x00 -v     Verbose mode\n\x00 -o     Ignore ONCE directives\n\x00 -t[n]  Trigger all future (or those within `n' days)\n\x00 -h     `Hush' mode - be very quiet\n\x00 -a     Don't trigger timed reminders immediately - just queue them\n\x00 -q     Don't queue timed reminders\n\x00 -f     Trigger timed reminders by staying in foreground\n\x00 -z[n]  Enter daemon mode, waking every n (1) minutes.\n\x00 -d...  Debug: See man page for details\n\x00 -e     Divert messages normally sent to stderr to stdout\n\x00 -b[n]  Time format for cal: 0=am/pm, 1=24hr, 2=none\n\x00 -x[n]  Iteration limit for SATISFY clause (def=1000)\n\x00 -kcmd  Run `cmd' for MSG-type reminders\n\x00 -g[dddd] Sort reminders by date, time, priority, and 'timedness'\n\x00 -ivar=val Initialize var to val and preserve var\n\x00 -m     Start calendar with Monday rather than Sunday\n\x00 -y     Synthesize tags for tagless reminders\n\x00 -j[n]  Run in 'purge' mode.  [n = INCLUDE depth]\n\x00\nLong Options:\n\x00 --version                Print Remind version\n\x00 --hide-completed-todos   Don't show completed todos on calendar\n\x00 --only-todos             Only issue TODO reminders\n\x00 --only-events            Do not issue TODO reminders\n\x00 --json                   Use JSON output instead of plain-text\n\x00 --max-execution-time=n   Limit execution time to n seconds\n\x00 --max-expr-complexity=n  Limit expression evaluation to n nodes per line\n\x00 --print-config-cmd       Print ./configure cmd used to build Remind\n\x00 --print-errs             Print all possible error messages\n\x00 --print-tokens           Print all possible Remind tokens\n\x00 --no-fmt                 Do not format FMT-style reminders\n\x00 --file=filename          Use option to set file\n\x00\nRemind home page: %s\n\x00https://dianne.skoll.ca/projects/remind/\x00HOME=%s\x00SHELL=%s\x00USER=%s\x00LOGNAME=%s\x00-i option: %s: %s\n\x00Too many trusted users (%d max)\n\x00test\x00Enabling test mode: This is meant for the acceptance test.\nDo not use --test in production.\nIn test mode, the system time is fixed at 2025-01-06@19:00\n\x00no-fmt\x00only-todos\x00remind: Cannot combine --only-todos and --only-events\n\x00only-events\x00flush\x00json\x00print-config-cmd\x00./configure --prefix=/usr/local\x00print-errs\x00hide-completed-todos\x00print-tokens\x00max-expr-complexity=%lu\x00file=\x00%s: --file= can only be used once (ignoring second)\n\x00%s: file= requires an argument\n\x00max-execution-time=%d\x00%s: --max-execution-time must be non-negative\n\x00%s: Unknown long option --%s\n\x00\x1b]11;?\x1b\\\x00rgb:%x/%x/%x\x00===== S T A T I S T I C S =====\n\x00DynBuf Mallocs: %lu mallocs; %lu bytes\n\x00\nVariable hash table statistics:\n\x00\nFunction hash table statistics:\n\x00\nDedupe hash table statistics:\n\x00\nTranslation hash table statistics:\n\x00 Max expr node evals / line: %lu (%s:%d)\n\x00 Max expr node evals / line: %lu\n\x00      Total expr node evals: %lu\n\x00\n\nmax-execution-time exceeded.\n\n\x00{\"noreminders\":\"\x00}\n\x00]\n\x00%s: `%s': %s.\n\x00#!P\x00#!P! Could not parse next line: %s\n\x00%s(%d): \x00%s(%d:%d): \x00       \x00/etc/localtime\x00#!P: The next IF evaluated false...\x00#!P: REM statements in IF block not checked for purging.\x00#!P: The previous IF evaluated true.\x00#!P: REM statements in ELSE block not checked for purging\x00#!P: The next IFTRIG did not trigger.\x00#!P: REM statements in IFTRIG block not checked for purging.\x0005.02.03\x00ON\x00OFF\x00/dev/null\x00INVALID_WKDAY\x00INVALID_MON\x00Warning: Unable to save ONCE timestamp to %s: %s\x00%d\n# This is a timestamp file used by Remind to track ONCE reminders.\n# Do not edit or delete it.\n\x00i\x00span\x00??? Software error!  No done scratchpad in MarkupToAnsi\x00\x1b[3m\x00\x1b[9m\x00\x1b[4m\x00Unclosed formatting tags\x00color = \"#%2x%2x%2x\" %n\x00fgcolor = \"#%2x%2x%2x\" %n\x00foreground = \"#%2x%2x%2x\" %n\x00bgcolor = \"#%2x%2x%2x\" %n\x00background = \"#%2x%2x%2x\" %n\x00Unknown attribute in <span> tag at %s\x00Markup tags and attribute names should be all lower-case\x00Tag is missing closing >\x00Unclosed quote in tag <%s>\x00span \x00Unsupported formatting tag <%s>\x00</%s> tag without any opening tag\x00<%s> tag closed by </%s>\x00\x1b]8;;\x00\x1b\\\x00Unmatched PUSH-OMIT-CONTEXT at %s(%d)\x00POP-OMIT-CONTEXT at %s:%d matches PUSH-OMIT-CONTEXT in different file: %s:%d\x00%s('%04d-%02d-%02d')\x00OMIT: UNTIL not allowed; did you mean THROUGH?\x00%s: `%s' (OMIT)\x0004.02.09\x00You have OMITted everything!  The space-time continuum is at risk.\x00Error: THROUGH date earlier than start date\x00Global Full OMITs (%d of maximum allowed %d):\n\x00\tNone.\n\x00\t%04d%c%02d%c%02d\n\x00Global Partial OMITs (%d of maximum allowed %d):\n\x00\t%02d%c%02d\n\x00Global Weekday OMITs:\n\x00\t%s\n\x00{\x00response\x00queued\x00nqueued\x00\"command\":\"STATUS\"}\n\x00NOTE queued %d\n\x00{\"response\":\"reread\",\"command\":\"SIGHUP\"}\n\x00NOTE SIGHUP\nNOTE reread\n\x00Cannot stat %s - not running as daemon!\x00{\"response\":\"reminder\",\x00qid\x00ttime\x00tdatetime\x00NOTE reminder %s\x00*\n\x00\"}\n\x00NOTE endreminder\n\x00Contents of AT queue:%s\x00Trigger: %02d%c%02d  Activate: %02d%c%02d  Rep: %d  Delta: %d  Sched: %s\x00(%d)\x00SPECIAL\x00Text: %s %s%s%s%s%s\x00To terminate program, send SIGQUIT (probably Ctrl-\\ on the keyboard.)%s\x00SCHED: Considering %04d%c%02d%c%02d%c%02d%c%02d\n\x00{\"response\":\"queue\",\"queue\":\x00[\x00rundisabled\x00ntrig\x00type\x00NO_TYPE\x00MSG_TYPE\x00RUN_TYPE\x00CAL_TYPE\x00SAT_TYPE\x00PS_TYPE\x00PSF_TYPE\x00MSF_TYPE\x00PASSTHRU_TYPE\x00body\x00\"}\x00]\x00,\"command\":\"QUEUE\"}\n\x00{\"response\":\"newdate\"}\n{\"response\":\"reread\",\"command\":\"newdate\"}\n\x00NOTE newdate\nNOTE reread\n\x00{\"response\":\"reread\",\"command\":\"inotify\"}\n\x00EXIT\n\x00STATUS\n\x00QUEUE\n\x00NOTE queue\n\x00 RunDisabled=%d ntrig=%d ttime=%02d:%02d nexttime=%02d:%02d delta=%d rep=%d duration=%d \x00NULL\x00%s %s %s\n\x00NOTE endqueue\n\x00JSONQUEUE\n\x00NOTE JSONQUEUE\n\x00NOTE ENDJSONQUEUE\n\x00TRANSLATE \x00translate\x00\"translation\":{\"\x00\"},\x00\"command\":\"TRANSLATE\"}\n\x00TRANSLATE_DUMP\n\x00NOTE TRANSLATE_DUMP\n\x00translate_dump\x00\"table\":\x00\nNOTE ENDTRANSLATE_DUMP\n\x00,\"command\":\"TRANSLATE_DUMP\"}\n\x00REREAD\n\x00{\"response\":\"reread\",\"command\":\"REREAD\"}\n\x00NOTE reread\n\x00DEL \x00DEL %d\x00{\"response\":\"error\",\"error\":\"Unknown command\",\"command\":\"\x00ERR Invalid daemon command: %s\x00sortbanner\x00sortbanner('%04d/%02d/%02d')\x00after\x00april\x00august\x00banner\x00before\x00cal\x00clear-omit-context\x00complete-through\x00completed-through\x00debug\x00december\x00do\x00dumpvars\x00else\x00endif\x00errmsg\x00exit\x00expr\x00february\x00first\x00fmt\x00fourth\x00frename\x00friday\x00fset\x00funset\x00if\x00iftrig\x00in\x00include\x00includecmd\x00info\x00january\x00july\x00june\x00last\x00lastday\x00lastworkday\x00march\x00max-overdue\x00may\x00maybe-uncomputable\x00monday\x00msf\x00msg\x00november\x00october\x00omit\x00pop-funcs\x00pop-omit-context\x00pop-vars\x00preserve\x00ps\x00psfile\x00push-funcs\x00push-omit-context\x00push-vars\x00return\x00run\x00satisfy\x00saturday\x00second\x00september\x00set\x00special\x00sunday\x00sysinclude\x00tag\x00third\x00through\x00thursday\x00todo\x00tuesday\x00unset\x00wednesday\x00%.*s\n\x00# Remind Tokens\n\n\x00\n# Month Names\n\n\x00\n# Weekdays\n\n\x00LANGID\x00 \"\"\n\x00# Translation table template\n\n\x00TRANSLATE \"LANGID\" \x00\n\n\x00BANNER %s\n\x00\n# Weekday Names\n\x00SET $%s \x00\n# Month Names\n\x00\n# Other Translation-related System Variables\n\x00\n# Error Messages\n\x00\n# Other Messages\n\x00[\"[\"]\x00# Translation table\n\x00:\x00Unable to initialize translation hash table: Out of memory.  Exiting.\n\x00en\x00Invalid translation: Both original and translated must have the same printf-style formatting sequences in the same order.\x00dump\x00clear\x00generate\x00#0- +'I%123456789.hlqLjzZt\x00NextSimpleTrig %s %d\x00%s(%s): Trig(adj) = %s, %d %s, %d\x00%s(%s): %s\n\x00%s(%s): Trig = %s, %d %s, %d\x00%s(%s): %s: %04d-%02d-%02d\n\x00Invalid INFO string: Must be of the form \"Header: Value\"\x00Duplicate INFO headers are not permitted\x00Potential function definition considered non-constant because of context\x00[cmdline]\x00Function `%s' redefined: previously defined at %s(%s)\x00Function definition considered non-constant because of context\x0003.00.04\x00Warning: Function name `%s...' truncated to `%s'\x0006.02.06\x00POP-FUNCS at %s:%d matches PUSH-FUNCS in different file: %s:%d\x00Unmatched PUSH-FUNCS at %s(%d)\x00/usr/share/zoneinfo\x00In\x00Called from\x00    \x00%s(%s): [#%d] %s function `%s'\x00\n    [\x00remaining call frames omitted\x00%d:%d\x0006.01.05\x00No time zone file found for TZ `%s'... is it valid?\x00Unable to initialize variable hash table: Out of memory.  Exiting.\n\x00C\x00Accepting \"%s\" for $Latitude/$Longitude, but you should use the \"C\" locale decimal separator \".\" instead\x00%s is deprecated; use %s instead\x00$LatDeg\x00$Latitude\x00$LatMin\x00$LatSec\x00$LongDeg\x00$Longitude\x00$LongMin\x00$LongSec\x00%.8f\x00Not setting $OnceFile: Already processed a reminder with a ONCE clause\x00@\x00`%s' UNSET without being used (previous SET: %s:%d)\x00`%s' re-SET without being used (previous SET: %s:%d)\x00Potential variable assignment considered non-constant because of context\x00Do not use [] around expression in SET command\x00Variable assignment considered non-constant because of context\x00Warning: Variable name `%.*s...' truncated to `%.*s'\x00-c\x00%s  %s\n\n\x00%s  %s\n\x00%s  \x00 <preserved>\x00 <const>\x00The following variables were set, but not subsequently used:\x00\t%s - %s %s:%d\n\x00defined at\x00AddBlankLines\x00Ago\x00Am\x00And\x00At\x00CalcUTC\x00CalMode\x00CalType\x00Daemon\x00DateSep\x00DateTimeSep\x00DedupeReminders\x00DefaultColor\x00DefaultColour\x00DefaultDelta\x00DefaultPrio\x00DefaultTDelta\x00DeltaOverride\x00DontFork\x00DontQueue\x00DontTrigAts\x00EndSent\x00EndSentIg\x00ExpressionTimeLimit\x00FirstIndent\x00FoldYear\x00FormWidth\x00Fromnow\x00HideCompletedTodos\x00Hour\x00Hplu\x00HushMode\x00IgnoreOnce\x00InfDelta\x00IntMax\x00IntMin\x00Is\x00JSONMode\x00LatDeg\x00Latitude\x00LatMin\x00LatSec\x00Location\x00LongDeg\x00Longitude\x00LongMin\x00LongSec\x00MaxCachedLines\x00MaxFullOmits\x00MaxIncludeCmdLines\x00MaxLateMinutes\x00MaxLineLength\x00MaxPartialOmits\x00MaxSatIter\x00MaxStringLen\x00MinsFromUTC\x00Minute\x00Mplu\x00NextMode\x00Now\x00NumFullOmits\x00NumPartialOmits\x00NumQueued\x00NumTrig\x00On\x00OnceFile\x00ParseUntriggered\x00Pm\x00PrefixLineNo\x00PSCal\x00Repeat\x00RunOff\x00Shaded\x00SimpleCal\x00SortByDate\x00SortByPrio\x00SortByTime\x00SubsIndent\x00SuppressImplicitWarnings\x00SuppressLRM\x00SysInclude\x00Tb\x00TerminalBackground\x00TerminalHyperlinks\x00TimeSep\x00TimetIs64bit\x00Today\x00TodoFilter\x00Tomorrow\x00Tt\x00Tu\x00U\x00Ud\x00Um\x00UntimedFirst\x00Use256Colors\x00UseBGVTColors\x00UseTrueColors\x00UseVTColors\x00Uw\x00Uy\x00WarningLevel\x00Was\x00Unmatched PUSH-VARS at %s(%d)\x00%s: `$%s'\x00POP-VARS at %s:%d matches PUSH-VARS in different file: %s:%d\x00(Security note: $RunOff variable tested.)\x00$%s: Name too long\n\x00%25s  \x00%d\n\x00Error: %s\n\x00%-10d  \x00[%d, \x00Inf)\n\x00%d]\n\x00\n# System Variables\n\n\x00$%s\n\x00"

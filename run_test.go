@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -93,6 +94,79 @@ func TestRunLeavesProcessStreamsAlone(t *testing.T) {
 	after := [3]uintptr{os.Stdin.Fd(), os.Stdout.Fd(), os.Stderr.Fd()}
 	if before != after {
 		t.Errorf("process descriptors changed from %v to %v", before, after)
+	}
+}
+
+// stdinPipe points descriptor 0 at the read end of a new pipe until the test
+// ends, so that it differs from /dev/null, and returns what /proc reports for
+// it.
+func stdinPipe(t *testing.T) string {
+	t.Helper()
+	saved, err := syscall.Dup(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var p [2]int
+	if err := syscall.Pipe2(p[:], syscall.O_CLOEXEC); err != nil {
+		t.Fatal(err)
+	}
+	if err := syscall.Dup3(p[0], 0, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		syscall.Dup3(saved, 0, 0)
+		syscall.Close(saved)
+		syscall.Close(p[0])
+		syscall.Close(p[1])
+	})
+	target, err := os.Readlink("/proc/self/fd/0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return target
+}
+
+// Remind runs shell(), INCLUDECMD and RUN commands with /dev/null as their
+// standard input. The C build does that by putting /dev/null on descriptor
+// 0 around the command, which inside another program replaces the host
+// program's terminal: a terminal reader that wakes up in that interval reads
+// end-of-file. Each command here reports its own standard input and that of
+// the process running remind ($PPID of the shell). The brackets in
+// "pipe:[inode]" are removed, because remind evaluates brackets in reminder
+// bodies as expressions.
+func TestRunCommandsLeaveDescriptorZeroAlone(t *testing.T) {
+	keep := ` | tr -cd a-z0-9/:`
+	report := `parent=$(readlink /proc/$PPID/fd/0` + keep + `) child=$(readlink /proc/self/fd/0` + keep + `)`
+	tests := []struct {
+		name string
+		body string
+	}{
+		{"shell", "SET r shell(\"echo " + report + "\")\nREM MSG [r]\n"},
+		{"INCLUDECMD", "INCLUDECMD echo \"REM MSG " + report + "\"\n"},
+		{"RUN", "REM RUN echo " + report + "\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stdin := stdinPipe(t)
+			file := filepath.Join(t.TempDir(), "cmd.rem")
+			if err := os.WriteFile(file, []byte(tt.body), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			res, err := Run([]string{"-q", file}, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if res.ExitCode != 0 {
+				t.Errorf("exit status %d, want 0; stderr: %s", res.ExitCode, res.Stderr)
+			}
+			want := "parent=" + strings.Trim(strings.ReplaceAll(stdin, "[", ""), "]") + " child=/dev/null"
+			if !strings.Contains(string(res.Stdout), want) {
+				t.Errorf("stdout %q does not contain %q", res.Stdout, want)
+			}
+			if got, _ := os.Readlink("/proc/self/fd/0"); got != stdin {
+				t.Errorf("descriptor 0 is %q after the run, want %q", got, stdin)
+			}
+		})
 	}
 }
 

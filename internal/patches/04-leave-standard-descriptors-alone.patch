@@ -1,0 +1,113 @@
+diff --git a/src/files.c b/src/files.c
+index 9e8dc13..ffabff3 100644
+--- a/src/files.c
++++ b/src/files.c
+@@ -1120,6 +1120,13 @@ static int IncludeCmd(char const *cmd)
+ 
+     /* Not found in cache */
+ 
++#ifdef __CCGO__
++    /* rem_popen gives the command /dev/null as its standard input.
++       Descriptor 0 belongs to the host program when remind runs inside
++       another Go program, so leave it alone. */
++    stdin_dup = -1;
++    (void) devnull;
++#else
+     /* Connect stdin to /dev/null */
+     stdin_dup = dup(STDIN_FILENO);
+     if (stdin_dup >= 0) {
+@@ -1134,6 +1141,7 @@ static int IncludeCmd(char const *cmd)
+             (void) close(devnull);
+         }
+     }
++#endif
+ 
+     /* If cmd starts with !, then disable RUN within the cmd output */
+     if (cmd[0] == '!') {
+diff --git a/src/funcs.c b/src/funcs.c
+index 060cc18..f820adf 100644
+--- a/src/funcs.c
++++ b/src/funcs.c
+@@ -2593,6 +2593,11 @@ static int FShell(func_info *info)
+         }
+     }
+ 
++#ifdef __CCGO__
++    /* See the note about stdin in IncludeCmd in files.c */
++    stdin_dup = -1;
++    (void) devnull;
++#else
+     stdin_dup = dup(STDIN_FILENO);
+     if (stdin_dup >= 0) {
+         devnull = open("/dev/null", O_RDONLY);
+@@ -2606,6 +2611,7 @@ static int FShell(func_info *info)
+             (void) close(devnull);
+         }
+     }
++#endif
+ 
+     fp = popen(ARGSTR(0), "r");
+     if (!fp) {
+diff --git a/src/protos.h b/src/protos.h
+index 1ca4ca3..975b607 100644
+--- a/src/protos.h
++++ b/src/protos.h
+@@ -48,6 +48,8 @@
+ FILE *rem_popen(char const *cmd, char const *mode);
+ int rem_pclose(FILE *fp);
+ void rem_system_devnull(char const *cmd, int stdout_to_stderr);
++int rem_system(char const *cmd, FILE *out, FILE *err);
++int rem_in_process(void);
+ void rem_limit_execution_time(int seconds);
+ void rem_unlimit_execution_time(void);
+ void rem_exit(int status);
+diff --git a/src/queue.c b/src/queue.c
+index ecb3c0c..c468c48 100644
+--- a/src/queue.c
++++ b/src/queue.c
+@@ -213,6 +213,11 @@ static void
+ maybe_close(int fd)
+ {
+     int new_fd;
++#ifdef __CCGO__
++    /* Inside another Go program, descriptors 0, 1 and 2 belong to the
++       host program. */
++    if (rem_in_process()) return;
++#endif
+     /* Don't close descriptors connected to a TTY, except for stdin */
+     if (fd != STDIN_FILENO && isatty(fd)) return;
+ 
+diff --git a/src/utils.c b/src/utils.c
+index 3b2b6d4..1565b66 100644
+--- a/src/utils.c
++++ b/src/utils.c
+@@ -53,6 +53,21 @@ static int have_zoneinfo_dir(void)
+     return HaveZoneinfoDir;
+ }
+ 
++#ifdef __CCGO__
++/* rem_system gives the command /dev/null as its standard input and writes
++   its output through the given streams, without changing descriptors 0
++   and 1, which belong to the host program when remind runs inside another
++   Go program. */
++int system1(char const *cmd)
++{
++    return rem_system(cmd, stdout, stderr);
++}
++
++int system_to_stderr(char const *cmd)
++{
++    return rem_system(cmd, stderr, stderr);
++}
++#else
+ /* Call this instead of system() so if called ignores return code,
+    we don't get a compiler warning.  Also redirect stdin to /dev/null */
+ int system1(char const *cmd)
+@@ -118,6 +133,7 @@ int system_to_stderr(char const *cmd)
+     }
+     return r;
+ }
++#endif
+ 
+ /***************************************************************/
+ /*                                                             */
